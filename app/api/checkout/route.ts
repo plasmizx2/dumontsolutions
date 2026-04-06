@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Account not found." }, { status: 401 });
     }
 
-    const { plan, numSites, promoCode: promoRaw } = await request.json();
+    const { plan, promoCode: promoRaw } = await request.json();
 
     if (!plan) {
       return NextResponse.json({ error: "Missing plan" }, { status: 400 });
