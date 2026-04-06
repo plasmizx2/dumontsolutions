@@ -13,7 +13,7 @@ export function formatCatalogPricing(tier: string, numSites: number = 1): string
   const n = Math.max(1, Math.min(50, numSites || 1));
   const t = (tier || "").toLowerCase();
   if (t === "basic_site") return "$225 one-time";
-  if (t === "site_maintenance") return "$225 one-time + $60/mo";
+  if (t === "site_maintenance") return "$225 one-time + $225/mo";
   if (t === "multi_site") return `$${175 * n} one-time ($175 × ${n}) + $50/mo`;
   if (t === "pending") return "—";
   return "—";
