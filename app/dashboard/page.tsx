@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { PrismaClient } from "@prisma/client";
 import { authConfig } from "@/lib/auth";
+import { syncStripeDataForClient } from "@/lib/stripe-customer-sync";
 import BillingPortalButton from "@/components/BillingPortalButton";
 import DashboardShell from "./dashboard-shell";
 
@@ -22,7 +23,7 @@ export default async function CustomerDashboardPage({
     redirect("/dashboard/login");
   }
 
-  const client = await prisma.client.findUnique({
+  let client = await prisma.client.findUnique({
     where: { id: clientId },
     include: {
       subscriptions: { orderBy: { createdAt: "desc" }, take: 1 },
@@ -32,6 +33,25 @@ export default async function CustomerDashboardPage({
 
   if (!client) {
     redirect("/dashboard/login");
+  }
+
+  if (
+    process.env.STRIPE_SECRET_KEY &&
+    (client.payments.length === 0 || client.subscriptions.length === 0)
+  ) {
+    try {
+      await syncStripeDataForClient(clientId);
+      const refreshed = await prisma.client.findUnique({
+        where: { id: clientId },
+        include: {
+          subscriptions: { orderBy: { createdAt: "desc" }, take: 1 },
+          payments: { orderBy: { createdAt: "desc" }, take: 10 },
+        },
+      });
+      if (refreshed) client = refreshed;
+    } catch (e) {
+      console.error("syncStripeDataForClient:", e);
+    }
   }
 
   const subscription = client.subscriptions[0];
@@ -218,9 +238,10 @@ export default async function CustomerDashboardPage({
                     <td className="py-6 text-slate-600" colSpan={4}>
                       <p>No payments recorded yet.</p>
                       <p className="mt-2 text-sm text-slate-500">
-                        After you complete checkout, charges appear here with receipt
-                        links. Use <span className="font-medium text-slate-700">Manage Billing</span>{" "}
-                        to open Stripe for invoices and cards anytime.
+                        We sync successful charges from Stripe when you open this page.
+                        If you already paid, refresh once—then use{" "}
+                        <span className="font-medium text-slate-700">Manage Billing</span>{" "}
+                        for full history if anything is still missing.
                       </p>
                     </td>
                   </tr>
