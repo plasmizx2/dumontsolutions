@@ -1,7 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
+import {
+  formatPlanLabel,
+  formatCatalogPricing,
+  formatMonthlyFromCents,
+  getActiveMonthlyCents,
+  getBuildWindowDaysRemaining,
+} from "@/lib/plan-display";
 
 interface Client {
   id: number;
@@ -11,6 +18,18 @@ interface Client {
   phone?: string;
   siteUrl?: string;
   pricingTier: string;
+  numSites: number;
+  subscriptions?: Array<{
+    id: number;
+    status: string;
+    amountMonthly: number;
+    nextBillingDate: string | null;
+  }>;
+  payments?: Array<{
+    status: string;
+    paidAt: string | null;
+    createdAt: string;
+  }>;
 }
 
 export default function EditClientPage() {
@@ -78,6 +97,18 @@ export default function EditClientPage() {
       setSaving(false);
     }
   };
+
+  const planSummary = useMemo(() => {
+    if (!client) return null;
+    const monthly = formatMonthlyFromCents(getActiveMonthlyCents(client.subscriptions));
+    const catalog = formatCatalogPricing(client.pricingTier, client.numSites);
+    return { label: formatPlanLabel(client.pricingTier), catalog, monthly };
+  }, [client]);
+
+  const buildDaysLeft = useMemo(() => {
+    if (!client?.payments?.length) return null;
+    return getBuildWindowDaysRemaining(client.payments);
+  }, [client]);
 
   if (loading) {
     return <div className="text-center py-8">Loading...</div>;
@@ -194,7 +225,50 @@ export default function EditClientPage() {
               disabled
               className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
             />
-            <p className="text-sm text-gray-600 mt-1">
+            {planSummary && (
+              <div className="mt-3 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-800 space-y-1">
+                <div>
+                  <span className="font-semibold">{planSummary.label}</span>
+                  <span className="text-gray-600"> — {planSummary.catalog}</span>
+                </div>
+                {planSummary.monthly ? (
+                  <div>
+                    Active subscription:{" "}
+                    <span className="font-medium">{planSummary.monthly}</span>
+                  </div>
+                ) : (
+                  <div className="text-gray-600">
+                    No active monthly charge on file (one-time only or pending).
+                  </div>
+                )}
+                {(() => {
+                  const sub = client.subscriptions?.find(
+                    (s) => s.status === "active" && s.nextBillingDate
+                  );
+                  if (!sub?.nextBillingDate) return null;
+                  return (
+                    <div>
+                      Next renewal:{" "}
+                      {new Date(sub.nextBillingDate).toLocaleDateString()}
+                    </div>
+                  );
+                })()}
+                {buildDaysLeft !== null && (
+                  <div className="pt-1 border-t border-gray-200 mt-2">
+                    30-day build window:{" "}
+                    {buildDaysLeft < 0 ? (
+                      <span className="text-gray-700">ended</span>
+                    ) : buildDaysLeft === 0 ? (
+                      <span className="font-medium text-amber-800">last day</span>
+                    ) : (
+                      <span className="font-medium">{buildDaysLeft} days left</span>
+                    )}{" "}
+                    (from first successful payment)
+                  </div>
+                )}
+              </div>
+            )}
+            <p className="text-sm text-gray-600 mt-2">
               Plan type cannot be changed here
             </p>
           </div>

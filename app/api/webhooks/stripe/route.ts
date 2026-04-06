@@ -22,6 +22,75 @@ function paymentIntentIdFromSession(session: Stripe.Checkout.Session): string {
   return session.id;
 }
 
+/** Stripe Checkout `session.url` is the payment page, not a receipt — use Charge.receipt_url. */
+function looksLikeCheckoutPageUrl(url: string | null | undefined): boolean {
+  if (!url) return true;
+  return url.includes("checkout.stripe.com/c/pay") || url.includes("/c/pay/cs_");
+}
+
+async function receiptUrlFromLatestCharge(
+  latestCharge: string | Stripe.Charge | null
+): Promise<string | null> {
+  if (!latestCharge) return null;
+  if (typeof latestCharge === "string") {
+    const ch = await stripe.charges.retrieve(latestCharge);
+    return ch.receipt_url ?? null;
+  }
+  return latestCharge.receipt_url ?? null;
+}
+
+/** Receipt URL for one-time Checkout (mode=payment) after completion. */
+async function receiptUrlFromCheckoutSession(
+  sessionId: string
+): Promise<string | null> {
+  try {
+    const sess = await stripe.checkout.sessions.retrieve(sessionId, {
+      expand: ["payment_intent.latest_charge"],
+    });
+    const pi = sess.payment_intent;
+    if (!pi) return null;
+    if (typeof pi === "string") {
+      const intent = await stripe.paymentIntents.retrieve(pi, {
+        expand: ["latest_charge"],
+      });
+      return receiptUrlFromLatestCharge(intent.latest_charge);
+    }
+    return receiptUrlFromLatestCharge(
+      (pi as Stripe.PaymentIntent).latest_charge
+    );
+  } catch (e) {
+    console.error("receiptUrlFromCheckoutSession:", e);
+    return null;
+  }
+}
+
+async function invoiceOrReceiptUrl(invoice: Stripe.Invoice): Promise<string | null> {
+  if (invoice.hosted_invoice_url) return invoice.hosted_invoice_url;
+  if (invoice.invoice_pdf) return invoice.invoice_pdf;
+  try {
+    const full = await stripe.invoices.retrieve(invoice.id, {
+      expand: ["payment_intent.latest_charge"],
+    });
+    if (full.hosted_invoice_url) return full.hosted_invoice_url;
+    if (full.invoice_pdf) return full.invoice_pdf;
+    const pi = full.payment_intent;
+    if (typeof pi === "string") {
+      const intent = await stripe.paymentIntents.retrieve(pi, {
+        expand: ["latest_charge"],
+      });
+      return receiptUrlFromLatestCharge(intent.latest_charge);
+    }
+    if (pi && typeof pi === "object" && "latest_charge" in pi) {
+      return receiptUrlFromLatestCharge(
+        (pi as Stripe.PaymentIntent).latest_charge
+      );
+    }
+  } catch (e) {
+    console.error("invoiceOrReceiptUrl:", e);
+  }
+  return null;
+}
+
 export async function POST(request: NextRequest) {
   const body = await request.text();
   const signature = request.headers.get("stripe-signature");
@@ -169,6 +238,8 @@ export async function POST(request: NextRequest) {
           });
         }
 
+        const receiptUrl = await receiptUrlFromCheckoutSession(session.id);
+
         const stripePayId = paymentIntentIdFromSession(session);
         const existingPay = await prisma.payment.findUnique({
           where: { stripePaymentId: stripePayId },
@@ -182,8 +253,16 @@ export async function POST(request: NextRequest) {
               paymentType: "one_time",
               status: "succeeded",
               paidAt: new Date(),
-              invoiceUrl: session.url || null,
+              invoiceUrl: receiptUrl,
             },
+          });
+        } else if (
+          receiptUrl &&
+          (!existingPay.invoiceUrl || looksLikeCheckoutPageUrl(existingPay.invoiceUrl))
+        ) {
+          await prisma.payment.update({
+            where: { id: existingPay.id },
+            data: { invoiceUrl: receiptUrl },
           });
         }
 
@@ -315,6 +394,7 @@ export async function POST(request: NextRequest) {
           });
 
           if (subscription) {
+            const docUrl = await invoiceOrReceiptUrl(invoice);
             await prisma.payment.create({
               data: {
                 clientId: subscription.clientId,
@@ -327,7 +407,7 @@ export async function POST(request: NextRequest) {
                     ? (invoice as any).status_transitions.paid_at * 1000
                     : Date.now())
                 ),
-                invoiceUrl: invoice.hosted_invoice_url,
+                invoiceUrl: docUrl,
               },
             });
           }

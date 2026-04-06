@@ -1,13 +1,14 @@
 // Utility functions for managing client renewals and billing cycles
 
 export interface RenewalInfo {
+  subscriptionId: number;
   clientId: number;
   clientName: string;
   email: string;
   nextBillingDate: Date;
   amountMonthly?: number;
   daysRemaining: number;
-  isUrgent: boolean; // true if within 7 days
+  isUrgent: boolean; // true if within the configured renewal window (days)
   siteUrl?: string;
 }
 
@@ -33,8 +34,7 @@ export function calculateDaysRemaining(billingDate: Date): number {
 export function getCountdownText(daysRemaining: number): string {
   if (daysRemaining === 0) return "Today";
   if (daysRemaining === 1) return "Tomorrow";
-  if (daysRemaining <= 7) return `${daysRemaining} days`;
-  return `${Math.floor(daysRemaining / 7)} weeks`;
+  return `${daysRemaining} days`;
 }
 
 /**
@@ -73,6 +73,7 @@ export function filterUpcomingRenewals(subscriptions: any[], windowDays: number 
   return subscriptions
     .filter((sub) => sub.status === "active" && !!sub.client)
     .map((sub) => ({
+      subscriptionId: sub.id,
       clientId: sub.client.id,
       clientName: sub.client.name,
       email: sub.client.email,

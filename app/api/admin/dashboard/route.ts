@@ -43,7 +43,7 @@ export async function GET(_request: NextRequest) {
       date: p.paidAt?.toISOString() || p.createdAt.toISOString(),
     }));
 
-    // Get upcoming renewals (next 7 days)
+    // Upcoming renewals within the next 30 days (countdown / “timer” window)
     const subscriptions = await prisma.subscription.findMany({
       where: {
         status: "active",
@@ -52,7 +52,8 @@ export async function GET(_request: NextRequest) {
       include: { client: true },
     });
 
-    const upcomingRenewals = filterUpcomingRenewals(subscriptions, 7).map((renewal) => ({
+    const upcomingRenewals = filterUpcomingRenewals(subscriptions, 30).map((renewal) => ({
+      subscriptionId: renewal.subscriptionId,
       clientId: renewal.clientId,
       clientName: renewal.clientName,
       email: renewal.email,

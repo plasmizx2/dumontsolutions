@@ -177,7 +177,7 @@ export default async function CustomerDashboardPage({
                   <th className="py-3 pr-4">Date</th>
                   <th className="py-3 pr-4">Type</th>
                   <th className="py-3 pr-4">Amount</th>
-                  <th className="py-3 pr-4">Receipt</th>
+                  <th className="py-3 pr-4">Receipt / invoice</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -191,7 +191,7 @@ export default async function CustomerDashboardPage({
                       <td className="py-3 pr-4 font-semibold text-slate-900">
                         ${(p.amount / 100).toFixed(2)}
                       </td>
-                      <td className="py-3 pr-4">
+                      <td className="py-3 pr-4 max-w-[14rem]">
                         {p.invoiceUrl ? (
                           <a
                             href={p.invoiceUrl}
@@ -199,10 +199,16 @@ export default async function CustomerDashboardPage({
                             rel="noopener noreferrer"
                             className="link-fancy text-primary-700"
                           >
-                            View
+                            View receipt
                           </a>
                         ) : (
-                          <span className="text-slate-400">—</span>
+                          <span className="text-slate-500 text-xs leading-snug">
+                            No link stored — use{" "}
+                            <span className="text-slate-700 font-medium">
+                              Manage Billing
+                            </span>{" "}
+                            for invoices, or check your email.
+                          </span>
                         )}
                       </td>
                     </tr>

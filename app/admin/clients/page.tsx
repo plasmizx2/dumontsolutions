@@ -1,6 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {
+  formatPlanLabel,
+  formatCatalogPricing,
+  formatMonthlyFromCents,
+  getActiveMonthlyCents,
+} from "@/lib/plan-display";
 
 interface Client {
   id: number;
@@ -11,12 +17,39 @@ interface Client {
   pricingTier: string;
   numSites: number;
   createdAt: string;
+  subscriptions?: Array<{ status: string; amountMonthly: number }>;
 }
 
 export default function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+
+  const handleDelete = async (id: number) => {
+    if (
+      !confirm(
+        "Delete this client and all related subscriptions and payments? This cannot be undone."
+      )
+    ) {
+      return;
+    }
+    setDeletingId(id);
+    setError("");
+    try {
+      const res = await fetch(`/api/admin/clients/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setClients((c) => c.filter((x) => x.id !== id));
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setError((data as { error?: string }).error || "Failed to delete client");
+      }
+    } catch {
+      setError("Failed to delete client");
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   useEffect(() => {
     const fetchClients = async () => {
@@ -72,7 +105,7 @@ export default function ClientsPage() {
                 Website
               </th>
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
-                Plan
+                Plan & pricing
               </th>
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
                 Joined
@@ -104,10 +137,19 @@ export default function ClientsPage() {
                       <span className="text-gray-400 text-sm">Not set</span>
                     )}
                   </td>
-                  <td className="px-6 py-4">
-                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
-                      {client.pricingTier}
-                    </span>
+                  <td className="px-6 py-4 max-w-xs">
+                    <div className="text-sm font-medium text-gray-900">
+                      {formatPlanLabel(client.pricingTier)}
+                    </div>
+                    <div className="text-xs text-gray-600 mt-0.5">
+                      {formatCatalogPricing(client.pricingTier, client.numSites)}
+                      {(() => {
+                        const monthly = formatMonthlyFromCents(
+                          getActiveMonthlyCents(client.subscriptions)
+                        );
+                        return monthly ? ` · ${monthly} (Stripe)` : "";
+                      })()}
+                    </div>
                   </td>
                   <td className="px-6 py-4 text-gray-600 text-sm">
                     {new Date(client.createdAt).toLocaleDateString()}
@@ -116,15 +158,20 @@ export default function ClientsPage() {
                     <a href={`/admin/clients/${client.id}`} className="text-primary-600 hover:text-primary-700 mr-4">
                       Edit
                     </a>
-                    <button className="text-red-600 hover:text-red-700">
-                      Delete
+                    <button
+                      type="button"
+                      disabled={deletingId === client.id}
+                      onClick={() => handleDelete(client.id)}
+                      className="text-red-600 hover:text-red-700 disabled:opacity-50"
+                    >
+                      {deletingId === client.id ? "Deleting…" : "Delete"}
                     </button>
                   </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan={7} className="px-6 py-8 text-center text-gray-600">
+                <td colSpan={6} className="px-6 py-8 text-center text-gray-600">
                   No clients yet
                 </td>
               </tr>

@@ -20,6 +20,7 @@ interface DashboardStats {
     date: string;
   }>;
   upcomingRenewals: Array<{
+    subscriptionId: number;
     clientId: number;
     clientName: string;
     email: string;
@@ -98,7 +99,7 @@ export default function AdminDashboard() {
         <div className="bg-white rounded-lg shadow mb-8 border-l-4 border-red-500">
           <div className="px-6 py-4 border-b border-gray-200 bg-red-50">
             <h2 className="text-xl font-bold text-red-900">
-              ⏰ Upcoming Renewals (Next 7 Days)
+              ⏰ Upcoming Renewals (Next 30 Days)
             </h2>
           </div>
           <div className="overflow-x-auto">
@@ -140,7 +141,7 @@ export default function AdminDashboard() {
                   };
 
                   return (
-                    <tr key={renewal.clientId} className="hover:bg-red-50">
+                    <tr key={renewal.subscriptionId} className="hover:bg-red-50">
                       <td className="px-6 py-3 text-gray-900 font-medium">
                         {renewal.clientName}
                       </td>
@@ -160,7 +161,9 @@ export default function AdminDashboard() {
                         </span>
                       </td>
                       <td className="px-6 py-3 text-gray-900 font-medium">
-                        ${(renewal.amount / 100).toFixed(2)}
+                        {renewal.amount > 0
+                          ? `$${(renewal.amount / 100).toFixed(2)}`
+                          : "—"}
                       </td>
                       <td className="px-6 py-3">
                         {renewal.siteUrl ? (

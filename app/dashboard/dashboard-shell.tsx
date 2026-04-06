@@ -82,12 +82,13 @@ export default function DashboardShell({
               Payment received
             </h2>
             <p className="mt-3 text-slate-600">
-              Stripe will email a receipt to your address. You can also
-              download receipts from your dashboard payment history.
+              A &quot;View receipt&quot; link will appear in{" "}
+              <strong>Recent Payments</strong> below (usually within a few
+              seconds). Stripe also emails a receipt when enabled.
             </p>
             <p className="mt-2 text-sm text-slate-500">
-              Turn on receipt emails in Stripe Dashboard → Settings → Customer
-              emails if you don&apos;t see them.
+              If you don&apos;t see a link, use <strong>Manage Billing</strong>{" "}
+              for invoices and payment history in Stripe.
             </p>
             <button
               type="button"
