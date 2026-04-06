@@ -42,6 +42,12 @@ export default function Navigation() {
             </Link>
             {status !== "loading" && !session && (
               <>
+                <Link
+                  href="/signup"
+                  className="text-slate-700 hover:text-slate-900 transition font-semibold"
+                >
+                  Sign up
+                </Link>
                 <Link href="/login" className="btn-primary px-4 py-2">
                   Sign in
                 </Link>
@@ -75,6 +81,9 @@ export default function Navigation() {
           <div className="md:hidden flex items-center gap-2">
             {status !== "loading" && !session && (
               <>
+                <Link href="/signup" className="btn-secondary px-3 py-2">
+                  Sign up
+                </Link>
                 <Link href="/login" className="btn-primary px-3 py-2">
                   Sign in
                 </Link>
@@ -125,6 +134,9 @@ export default function Navigation() {
             </Link>
             {status !== "loading" && !session && (
               <>
+                <Link href="/signup" className="btn-secondary w-full">
+                  Sign up
+                </Link>
                 <Link href="/login" className="btn-primary w-full">
                   Sign in
                 </Link>

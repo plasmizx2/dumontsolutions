@@ -93,7 +93,7 @@ export default function PricingInner() {
     if (status === "loading") return;
     if (!session || role !== "client") {
       router.push(
-        `/login?next=${encodeURIComponent(
+        `/signup?next=${encodeURIComponent(
           `/pricing?checkout=${plan.stripeProductId}`
         )}`
       );

@@ -56,9 +56,13 @@ export default function LoginClient() {
             Having trouble? Try a different Google account or contact support.
           </p>
 
-          <div className="mt-6 text-center text-xs text-slate-500">
-            <Link href="/pricing" className="link-fancy text-primary-700">
-              View pricing
+          <div className="mt-6 text-center text-sm text-slate-600">
+            New here?{" "}
+            <Link
+              href={`/signup${next ? `?next=${encodeURIComponent(next)}` : ""}`}
+              className="link-fancy text-primary-700 font-semibold"
+            >
+              Create an account
             </Link>
           </div>
         </div>
