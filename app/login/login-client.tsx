@@ -33,9 +33,7 @@ export default function LoginClient() {
             </h1>
           </div>
           <p className="text-slate-600 mt-2">
-            Continue with Google. If your email is{" "}
-            <span className="font-semibold">seandumont2005@gmail.com</span>{" "}
-            you&apos;ll be signed in as admin automatically.
+            Continue with Google to access your dashboard.
           </p>
 
           <button
