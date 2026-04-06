@@ -8,20 +8,17 @@ type Props = {
   checkoutSuccess: boolean;
   initialCompany: string | null;
   initialPhone: string | null;
-  initialSiteUrl: string | null;
 };
 
 export default function DashboardShell({
   checkoutSuccess,
   initialCompany,
   initialPhone,
-  initialSiteUrl,
 }: Props) {
   const router = useRouter();
   const [showThanks, setShowThanks] = useState(checkoutSuccess);
   const [company, setCompany] = useState(initialCompany ?? "");
   const [phone, setPhone] = useState(initialPhone ?? "");
-  const [siteUrl, setSiteUrl] = useState(initialSiteUrl ?? "");
   const [saving, setSaving] = useState(false);
   const [savedMsg, setSavedMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -31,9 +28,7 @@ export default function DashboardShell({
   }, [checkoutSuccess]);
 
   const incomplete =
-    !initialCompany?.trim() ||
-    !initialPhone?.trim() ||
-    !initialSiteUrl?.trim();
+    !initialCompany?.trim() || !initialPhone?.trim();
 
   const saveProfile = async () => {
     setSaving(true);
@@ -46,7 +41,6 @@ export default function DashboardShell({
         body: JSON.stringify({
           company: company.trim() || null,
           phone: phone.trim() || null,
-          siteUrl: siteUrl.trim() || null,
         }),
       });
       const data = await res.json();
@@ -112,8 +106,8 @@ export default function DashboardShell({
             Complete your project details
           </h2>
           <p className="text-slate-600 mb-6">
-            Add your company, phone, and live site URL (or placeholder) so we
-            can reach you and link your project.
+            Add your company and phone so we can reach you. Your live site link
+            will appear here once we set it up for you.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -137,17 +131,6 @@ export default function DashboardShell({
                 onChange={(e) => setPhone(e.target.value)}
                 className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/80 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-400"
                 placeholder="+1 (555) 000-0000"
-              />
-            </div>
-            <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-slate-700 mb-2">
-                Site URL
-              </label>
-              <input
-                value={siteUrl}
-                onChange={(e) => setSiteUrl(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/80 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-400"
-                placeholder="https://yoursite.com"
               />
             </div>
           </div>

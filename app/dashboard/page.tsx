@@ -42,7 +42,6 @@ export default async function CustomerDashboardPage({
         checkoutSuccess={checkout === "success"}
         initialCompany={client.company}
         initialPhone={client.phone}
-        initialSiteUrl={client.siteUrl}
       />
 
       <div className="flex items-start justify-between gap-6 flex-col sm:flex-row">
