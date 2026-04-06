@@ -1,0 +1,33 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authConfig } from "@/lib/auth";
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
+
+export async function GET(request: NextRequest) {
+  try {
+    const session = await getServerSession(authConfig);
+
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const cancellations = await prisma.subscription.findMany({
+      where: {
+        status: "canceled",
+        canceledAt: { not: null },
+      },
+      include: { client: true },
+      orderBy: { canceledAt: "desc" },
+    });
+
+    return NextResponse.json(cancellations);
+  } catch (error) {
+    console.error("Cancellations fetch error:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch cancellations" },
+      { status: 500 }
+    );
+  }
+}
