@@ -15,8 +15,6 @@ export async function POST(request: Request) {
 
     // If this is a checkout.session.completed test, create a test payment
     if (body.type === 'checkout.session.completed') {
-      const session = body.data;
-      
       // Find or create test client
       let client = await prisma.client.findFirst({
         where: { email: 'plasmiz75@gmail.com' }
