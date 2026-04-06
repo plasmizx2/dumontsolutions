@@ -16,6 +16,8 @@ export default function DashboardShell({
   initialPhone,
 }: Props) {
   const router = useRouter();
+  // Initial ?checkout=success only; do not re-sync from props when the URL is cleaned
+  // or the thanks modal would reopen on every refresh.
   const [showThanks, setShowThanks] = useState(checkoutSuccess);
   const [company, setCompany] = useState(initialCompany ?? "");
   const [phone, setPhone] = useState(initialPhone ?? "");
@@ -24,11 +26,19 @@ export default function DashboardShell({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setShowThanks(checkoutSuccess);
-  }, [checkoutSuccess]);
+    if (!checkoutSuccess) return;
+    router.replace("/dashboard", { scroll: false });
+  }, [checkoutSuccess, router]);
 
   const incomplete =
     !initialCompany?.trim() || !initialPhone?.trim();
+
+  const dismissThanks = () => {
+    setShowThanks(false);
+    if (typeof window !== "undefined" && window.location.search.includes("checkout=")) {
+      router.replace("/dashboard", { scroll: false });
+    }
+  };
 
   const saveProfile = async () => {
     setSaving(true);
@@ -68,7 +78,7 @@ export default function DashboardShell({
           <button
             type="button"
             className="absolute inset-0 bg-slate-950/50 backdrop-blur-sm"
-            onClick={() => setShowThanks(false)}
+            onClick={dismissThanks}
             aria-label="Close"
           />
           <div className="relative w-full max-w-md card p-8 sm:p-10 text-center">
@@ -92,7 +102,7 @@ export default function DashboardShell({
             </p>
             <button
               type="button"
-              onClick={() => setShowThanks(false)}
+              onClick={dismissThanks}
               className="btn-primary w-full mt-6"
             >
               Continue to dashboard
