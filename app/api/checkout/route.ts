@@ -99,6 +99,7 @@ export async function POST(request: NextRequest) {
       clientName,
       clientEmail,
       plan,
+      clientId: String(clientId),
     };
 
     let discounts:

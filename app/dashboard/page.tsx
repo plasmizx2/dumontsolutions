@@ -238,10 +238,15 @@ export default async function CustomerDashboardPage({
                     <td className="py-6 text-slate-600" colSpan={4}>
                       <p>No payments recorded yet.</p>
                       <p className="mt-2 text-sm text-slate-500">
-                        We sync successful charges from Stripe when you open this page.
-                        If you already paid, refresh once—then use{" "}
+                        We pull payments from Stripe when you load this page (by your
+                        account email and by checkout metadata). If you paid while signed
+                        into a <span className="font-medium text-slate-700">different</span>{" "}
+                        Google account than this one, they won&apos;t show here. Test and
+                        live mode must also match your{" "}
+                        <span className="font-medium text-slate-700">Stripe keys</span> on
+                        the server. Use{" "}
                         <span className="font-medium text-slate-700">Manage Billing</span>{" "}
-                        for full history if anything is still missing.
+                        to see charges in Stripe.
                       </p>
                     </td>
                   </tr>
