@@ -20,14 +20,17 @@ export default function AdminLayout({
 
   useEffect(() => {
     if (mounted && status === "unauthenticated") {
-      router.push("/admin/login");
+      router.push("/login?mode=admin&next=%2Fadmin");
     }
   }, [mounted, status, router]);
 
   if (!mounted || status === "loading") {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-xl text-gray-600">Loading...</div>
+        <div className="flex items-center gap-3 text-gray-700">
+          <span className="spinner inline-block h-5 w-5 rounded-full border-2 border-slate-400/60 border-t-slate-900" />
+          <span className="text-lg font-semibold">Loading…</span>
+        </div>
       </div>
     );
   }

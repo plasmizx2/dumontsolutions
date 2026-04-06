@@ -42,9 +42,9 @@ export default function CancelSubscriptionPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      <div className="min-h-screen flex flex-col justify-center py-12 sm:px-6 lg:px-8">
         <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-          <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10 text-center">
+          <div className="card p-8 sm:p-10 text-center">
             <CheckCircle2 className="mx-auto h-16 w-16 text-green-500 mb-4" />
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Subscription Canceled</h2>
             <p className="text-gray-600 mb-6">
@@ -52,7 +52,7 @@ export default function CancelSubscriptionPage() {
             </p>
             <Link 
               href="/"
-              className="inline-flex items-center text-blue-600 hover:text-blue-700 font-medium"
+              className="inline-flex items-center text-primary-700 hover:text-primary-800 font-semibold"
             >
               Return Home <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
@@ -63,18 +63,18 @@ export default function CancelSubscriptionPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="text-center">
           <h2 className="mt-6 text-3xl font-extrabold text-gray-900">Cancel Subscription</h2>
           <p className="mt-2 text-sm text-gray-600">
-            We're sorry to see you go. Remember, you keep full ownership of your code.
+            We&apos;re sorry to see you go. Remember, you keep full ownership of your code.
           </p>
         </div>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+        <div className="card p-8 sm:p-10">
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md text-sm">
@@ -95,7 +95,7 @@ export default function CancelSubscriptionPage() {
                   required
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  className="appearance-none block w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/70 shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent sm:text-sm"
                 />
               </div>
             </div>
@@ -114,12 +114,12 @@ export default function CancelSubscriptionPage() {
                       value="github"
                       checked={formData.codeDeliveryMethod === "github"}
                       onChange={(e) => setFormData({ ...formData, codeDeliveryMethod: e.target.value })}
-                      className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300"
+                      className="focus:ring-primary-400 h-4 w-4 text-primary-600 border-gray-300"
                     />
                   </div>
                   <div className="ml-3 text-sm">
                     <label htmlFor="github" className="font-medium text-gray-700">🖥️ GitHub Repository</label>
-                    <p className="text-gray-500">We'll invite you to a private repository containing all your code. Fast and secure.</p>
+                    <p className="text-gray-500">We&apos;ll invite you to a private repository containing all your code. Fast and secure.</p>
                   </div>
                 </div>
                 <div className="flex items-start">
@@ -131,12 +131,12 @@ export default function CancelSubscriptionPage() {
                       value="thumbdrive"
                       checked={formData.codeDeliveryMethod === "thumbdrive"}
                       onChange={(e) => setFormData({ ...formData, codeDeliveryMethod: e.target.value })}
-                      className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300"
+                      className="focus:ring-primary-400 h-4 w-4 text-primary-600 border-gray-300"
                     />
                   </div>
                   <div className="ml-3 text-sm">
                     <label htmlFor="thumbdrive" className="font-medium text-gray-700">💾 Physical Thumb Drive</label>
-                    <p className="text-gray-500">We'll put your code on a USB drive and mail it to you via USPS. Takes 5-7 business days.</p>
+                    <p className="text-gray-500">We&apos;ll put your code on a USB drive and mail it to you via USPS. Takes 5-7 business days.</p>
                   </div>
                 </div>
               </div>
@@ -153,7 +153,7 @@ export default function CancelSubscriptionPage() {
                   rows={3}
                   value={formData.reason}
                   onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  className="appearance-none block w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/70 shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent sm:text-sm"
                   placeholder="Any feedback is appreciated..."
                 />
               </div>
@@ -163,7 +163,7 @@ export default function CancelSubscriptionPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="btn w-full flex justify-center text-sm font-semibold text-white bg-gradient-to-r from-rose-600 via-red-600 to-orange-600 hover:brightness-[1.02] focus-visible:ring-2 focus-visible:ring-rose-400 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? "Canceling..." : "Cancel Subscription"}
               </button>

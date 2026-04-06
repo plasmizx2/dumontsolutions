@@ -14,7 +14,7 @@
     "next": "^15.2.0",
     "@prisma/client": "^6.0.0",
     "stripe": "^14.0.0",
-    "next-auth": "^5.0.0",
+    "next-auth": "^4.24.11",
     "bcryptjs": "^2.4.3",
     "nodemailer": "^6.9.0",
     "class-variance-authority": "^0.7.0",

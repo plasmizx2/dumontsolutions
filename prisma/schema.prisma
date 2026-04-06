@@ -29,6 +29,7 @@ model Client {
   pricingTier String // "basic" | "maintenance" | "multi-site"
   numSites Int @default(1)
   stripeCustomerId String?
+  portalCodeHash String? // hashed portal code for customer dashboard login
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

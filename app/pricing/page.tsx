@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
+import SignupModal from "@/components/SignupModal";
 
 const pricingPlans = [
   {
@@ -40,8 +40,8 @@ const pricingPlans = [
   {
     name: "Multi-Site + Maintenance",
     description: "For expanding operations",
-    price: "$225",
-    billingPeriod: "per site + $60/month",
+    price: "$175",
+    billingPeriod: "per site + $50/month",
     features: [
       "Everything in Site + Maintenance",
       "Manage multiple websites",
@@ -57,57 +57,77 @@ const pricingPlans = [
 ];
 
 export default function PricingPage() {
-  const [billingCycle, setBillingCycle] = useState("monthly");
+  const [signupOpen, setSignupOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<{
+    id: "basic_site" | "site_maintenance" | "multi_site";
+    name: string;
+  } | null>(null);
 
   return (
     <div>
+      <SignupModal
+        open={signupOpen}
+        plan={selectedPlan}
+        onClose={() => setSignupOpen(false)}
+      />
+
       {/* Hero */}
-      <section className="bg-gray-50 py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 className="text-4xl font-bold text-center mb-4">
+      <section className="relative overflow-hidden py-14 sm:py-20">
+        <div className="absolute inset-0 -z-10">
+          <div className="absolute -top-24 left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-primary-400/20 blur-3xl animate-float" />
+          <div className="absolute -top-16 right-[-140px] h-[520px] w-[520px] rounded-full bg-blue-500/15 blur-3xl animate-float-slow" />
+        </div>
+        <div className="container-page text-center">
+          <h1 className="text-4xl sm:text-5xl font-black tracking-tight mb-4">
             Simple, Transparent Pricing
           </h1>
-          <p className="text-xl text-gray-600 text-center">
-            Choose the plan that's right for your business
+          <p className="text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto">
+            Choose the plan that&apos;s right for your business
           </p>
         </div>
       </section>
 
       {/* Pricing Cards */}
       <section className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="container-page">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {pricingPlans.map((plan, index) => (
               <div
                 key={index}
-                className={`rounded-lg overflow-hidden transition transform hover:scale-105 ${
+                className={`card card-hover overflow-hidden ${
                   plan.highlighted
-                    ? "border-2 border-primary-600 shadow-2xl md:scale-105"
-                    : "border border-gray-200 shadow-lg"
+                    ? "ring-2 ring-primary-400/70 md:scale-[1.02]"
+                    : ""
                 }`}
               >
                 {plan.highlighted && (
-                  <div className="bg-primary-600 text-white px-4 py-2 text-center font-semibold">
+                  <div className="text-white px-4 py-2 text-center font-semibold"
+                       style={{ background: "linear-gradient(135deg,#0284c7,#0ea5e9,#2563eb)" }}>
                     POPULAR
                   </div>
                 )}
                 <div className="p-8">
                   <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
-                  <p className="text-gray-600 mb-6">{plan.description}</p>
+                  <p className="text-slate-600 mb-6">{plan.description}</p>
 
                   <div className="mb-6">
                     <span className="text-4xl font-bold">{plan.price}</span>
-                    <p className="text-gray-600 text-sm mt-2">
+                    <p className="text-slate-600 text-sm mt-2">
                       {plan.billingPeriod}
                     </p>
                   </div>
 
                   <button
-                    className={`w-full py-3 rounded font-semibold transition mb-8 ${
+                    type="button"
+                    className={`w-full mb-8 ${
                       plan.highlighted
-                        ? "bg-primary-600 text-white hover:bg-primary-700"
-                        : "border border-primary-600 text-primary-600 hover:bg-primary-50"
+                        ? "btn-primary"
+                        : "btn-secondary"
                     }`}
+                    onClick={() => {
+                      setSelectedPlan({ id: plan.stripeProductId, name: plan.name });
+                      setSignupOpen(true);
+                    }}
                   >
                     Get Started
                   </button>
@@ -116,7 +136,7 @@ export default function PricingPage() {
                     {plan.features.map((feature, idx) => (
                       <div key={idx} className="flex items-start">
                         <span className="text-primary-600 mr-3 mt-1">✓</span>
-                        <span className="text-gray-700">{feature}</span>
+                        <span className="text-slate-700">{feature}</span>
                       </div>
                     ))}
                   </div>
@@ -128,16 +148,16 @@ export default function PricingPage() {
       </section>
 
       {/* Comparison Table */}
-      <section className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-center mb-12">
+      <section className="py-20">
+        <div className="container-page">
+          <h2 className="text-3xl font-black tracking-tight text-center mb-12">
             Feature Comparison
           </h2>
 
-          <div className="overflow-x-auto">
-            <table className="w-full">
+          <div className="card overflow-x-auto">
+            <table className="w-full text-sm">
               <thead>
-                <tr className="bg-white border-b-2 border-gray-200">
+                <tr className="bg-white/70 border-b border-slate-200">
                   <th className="px-6 py-4 text-left font-semibold">Feature</th>
                   <th className="px-6 py-4 text-center font-semibold">
                     Basic Site
@@ -163,7 +183,7 @@ export default function PricingPage() {
                 ].map((row, idx) => (
                   <tr
                     key={idx}
-                    className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                    className={idx % 2 === 0 ? "bg-white/70" : "bg-slate-50/60"}
                   >
                     <td className="px-6 py-4 text-left">{row[0]}</td>
                     <td className="px-6 py-4 text-center">
@@ -186,7 +206,7 @@ export default function PricingPage() {
       {/* FAQ */}
       <section className="py-20">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-center mb-12">
+          <h2 className="text-3xl font-black tracking-tight text-center mb-12">
             Frequently Asked Questions
           </h2>
 
@@ -205,7 +225,7 @@ export default function PricingPage() {
                 a: "We offer a 14-day money-back guarantee if you're not satisfied with our work.",
               },
               {
-                q: "Is the $60/month renewal guaranteed?",
+                q: "Is the monthly renewal price guaranteed?",
                 a: "Yes, our maintenance pricing is fixed. No hidden fees or unexpected increases.",
               },
               {
@@ -213,9 +233,9 @@ export default function PricingPage() {
                 a: "Monthly updates, security patches, backups, performance optimization, and priority support.",
               },
             ].map((faq, idx) => (
-              <div key={idx} className="border-b border-gray-200 pb-6">
+              <div key={idx} className="card p-6">
                 <h3 className="text-lg font-semibold mb-2">{faq.q}</h3>
-                <p className="text-gray-600">{faq.a}</p>
+                <p className="text-slate-600">{faq.a}</p>
               </div>
             ))}
           </div>

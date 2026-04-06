@@ -2,9 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { PrismaClient } from "@prisma/client";
 import { sendWelcomeEmail } from "@/lib/emails";
+import bcrypt from "bcryptjs";
+import crypto from "crypto";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
 const prisma = new PrismaClient();
+
+function generatePortalCode() {
+  const chunk = () => crypto.randomBytes(2).toString("hex").toUpperCase();
+  return `DS-${chunk()}${chunk()}-${chunk()}${chunk()}`;
+}
 
 export async function POST(request: NextRequest) {
   const body = await request.text();
@@ -52,7 +59,12 @@ export async function POST(request: NextRequest) {
           where: { email: clientEmail },
         });
 
+        let portalCode: string | undefined;
+
         if (!client) {
+          portalCode = generatePortalCode();
+          const portalCodeHash = await bcrypt.hash(portalCode, 10);
+
           client = await prisma.client.create({
             data: {
               name: clientName,
@@ -60,7 +72,15 @@ export async function POST(request: NextRequest) {
               pricingTier: plan,
               numSites: plan === "multi_site" ? 1 : 1,
               stripeCustomerId: session.customer as string,
+              portalCodeHash,
             },
+          });
+        } else if (!client.portalCodeHash) {
+          portalCode = generatePortalCode();
+          const portalCodeHash = await bcrypt.hash(portalCode, 10);
+          client = await prisma.client.update({
+            where: { id: client.id },
+            data: { portalCodeHash },
           });
         }
 
@@ -84,6 +104,7 @@ export async function POST(request: NextRequest) {
             email: clientEmail,
             billingDate: new Date(),
             amount: session.amount_total || 0,
+            portalCode,
           });
         } catch (emailError) {
           console.error("Failed to send welcome email:", emailError);
@@ -91,22 +112,23 @@ export async function POST(request: NextRequest) {
 
         // If site_maintenance or multi_site, create subscription
         if (plan === "site_maintenance" || plan === "multi_site") {
-          const subscriptionPrice = 6000; // $60.00/month
+          const subscriptionPrice = plan === "multi_site" ? 5000 : 6000; // $50.00/mo (multi-site) or $60.00/mo
+          const priceData: any = {
+            currency: "usd",
+            product_data: {
+              name: "Monthly Maintenance",
+              description: "Site maintenance and support",
+            },
+            recurring: {
+              interval: "month",
+            },
+            unit_amount: subscriptionPrice,
+          };
           const stripeSubscription = await stripe.subscriptions.create({
             customer: session.customer as string,
             items: [
               {
-                price_data: {
-                  currency: "usd",
-                  product_data: {
-                    name: "Monthly Maintenance",
-                    description: "Site maintenance and support",
-                  },
-                  recurring: {
-                    interval: "month",
-                  },
-                  unit_amount: subscriptionPrice,
-                },
+                price_data: priceData,
               },
             ],
             metadata: { clientId: client.id.toString() },
@@ -191,7 +213,11 @@ export async function POST(request: NextRequest) {
                 amount: invoice.total || 0,
                 paymentType: "subscription",
                 status: "succeeded",
-                paidAt: new Date(invoice.paid_date ? invoice.paid_date * 1000 : Date.now()),
+                paidAt: new Date(
+                  ((invoice as any).status_transitions?.paid_at
+                    ? (invoice as any).status_transitions.paid_at * 1000
+                    : Date.now())
+                ),
                 invoiceUrl: invoice.hosted_invoice_url,
               },
             });

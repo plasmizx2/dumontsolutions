@@ -34,6 +34,7 @@ export async function POST(request: NextRequest) {
     const subscriptions = await prisma.subscription.findMany({
       where: {
         status: "active",
+        nextBillingDate: { not: null },
         client: {
           pricingTier: "maintenance",
         },
@@ -45,6 +46,7 @@ export async function POST(request: NextRequest) {
     const results = [];
 
     for (const subscription of subscriptions) {
+      if (!subscription.nextBillingDate) continue;
       const daysRemaining = calculateDaysRemaining(subscription.nextBillingDate);
 
       // Day 25: Send "upcoming renewal" email
@@ -55,7 +57,7 @@ export async function POST(request: NextRequest) {
             email: subscription.client.email,
             billingDate: subscription.nextBillingDate,
             amount: subscription.amountMonthly,
-            siteUrl: subscription.client.siteUrl,
+            siteUrl: subscription.client.siteUrl || undefined,
           });
           emailsSent++;
           results.push({
@@ -114,7 +116,7 @@ export async function POST(request: NextRequest) {
             email: subscription.client.email,
             billingDate: subscription.nextBillingDate,
             amount: subscription.amountMonthly,
-            siteUrl: subscription.client.siteUrl,
+            siteUrl: subscription.client.siteUrl || undefined,
           });
           emailsSent++;
           results.push({
@@ -168,6 +170,7 @@ export async function GET(request: NextRequest) {
     const subscriptions = await prisma.subscription.findMany({
       where: {
         status: "active",
+        nextBillingDate: { not: null },
         client: {
           pricingTier: "maintenance",
         },
@@ -178,10 +181,10 @@ export async function GET(request: NextRequest) {
     const renewalsData = subscriptions.map((sub) => ({
       clientName: sub.client.name,
       email: sub.client.email,
-      nextBillingDate: sub.nextBillingDate.toISOString(),
-      daysRemaining: calculateDaysRemaining(sub.nextBillingDate),
+      nextBillingDate: sub.nextBillingDate!.toISOString(),
+      daysRemaining: calculateDaysRemaining(sub.nextBillingDate!),
       amount: sub.amountMonthly,
-      siteUrl: sub.client.siteUrl,
+      siteUrl: sub.client.siteUrl || undefined,
     }));
 
     return NextResponse.json({

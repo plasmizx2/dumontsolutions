@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
     // Cancel Stripe subscription
     let stripeError = null;
     try {
-      await stripe.subscriptions.del(subscription.stripeSubscriptionId);
+      await stripe.subscriptions.cancel(subscription.stripeSubscriptionId);
     } catch (error) {
       console.error("Stripe cancellation error:", error);
       stripeError = error;

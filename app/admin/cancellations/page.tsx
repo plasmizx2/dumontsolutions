@@ -113,7 +113,7 @@ export default function CancellationsPage() {
             <p className="text-3xl font-bold text-gray-900">{pendingCancellations.length}</p>
           </div>
           <div className="bg-white rounded-lg shadow p-4">
-            <p className="text-sm text-gray-600">Overdue (>7 days)</p>
+            <p className="text-sm text-gray-600">Overdue (&gt;7 days)</p>
             <p className="text-3xl font-bold text-red-600">{overdueCancellations.length}</p>
           </div>
           <div className="bg-white rounded-lg shadow p-4">

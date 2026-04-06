@@ -5,6 +5,7 @@ export interface RenewalInfo {
   clientName: string;
   email: string;
   nextBillingDate: Date;
+  amountMonthly?: number;
   daysRemaining: number;
   isUrgent: boolean; // true if within 7 days
   siteUrl?: string;
@@ -70,12 +71,13 @@ export function isUpcomingRenewal(nextBillingDate: Date, windowDays: number = 7)
  */
 export function filterUpcomingRenewals(subscriptions: any[], windowDays: number = 7): RenewalInfo[] {
   return subscriptions
-    .filter((sub) => sub.status === "active" && sub.client?.pricingTier === "maintenance")
+    .filter((sub) => sub.status === "active" && !!sub.client)
     .map((sub) => ({
       clientId: sub.client.id,
       clientName: sub.client.name,
       email: sub.client.email,
       nextBillingDate: new Date(sub.nextBillingDate),
+      amountMonthly: sub.amountMonthly,
       daysRemaining: calculateDaysRemaining(new Date(sub.nextBillingDate)),
       isUrgent: isUpcomingRenewal(new Date(sub.nextBillingDate), windowDays),
       siteUrl: sub.client.siteUrl,

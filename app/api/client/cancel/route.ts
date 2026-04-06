@@ -56,16 +56,14 @@ export async function POST(request: NextRequest) {
     const subscription = client.subscriptions[0];
 
     // Cancel Stripe subscription
-    let stripeError = null;
     try {
-      await stripe.subscriptions.del(subscription.stripeSubscriptionId);
+      await stripe.subscriptions.cancel(subscription.stripeSubscriptionId);
     } catch (error) {
       console.error("Stripe cancellation error:", error);
-      stripeError = error;
     }
 
     // Update subscription in database
-    const updatedSubscription = await prisma.subscription.update({
+    await prisma.subscription.update({
       where: { id: subscription.id },
       data: {
         status: "canceled",

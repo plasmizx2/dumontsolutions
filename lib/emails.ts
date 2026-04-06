@@ -18,13 +18,14 @@ export interface EmailData {
   billingDate: Date;
   amount: number; // in cents
   siteUrl?: string;
+  portalCode?: string;
 }
 
 /**
  * Email 1: Day 1 after purchase - Welcome email
  */
 export async function sendWelcomeEmail(data: EmailData) {
-  const { clientName, email } = data;
+  const { clientName, email, portalCode } = data;
 
   try {
     await transporter.sendMail({
@@ -53,6 +54,18 @@ export async function sendWelcomeEmail(data: EmailData) {
         <p><strong>Cancel Anytime. Keep Your Code.</strong></p>
         <p>If you ever need to cancel, you own your code. We'll deliver it to you via GitHub or physical drive. No surprises, no complications.</p>
         <p>Manage or cancel your subscription at any time by visiting: <a href="${process.env.NEXTAUTH_URL}/cancel">${process.env.NEXTAUTH_URL}/cancel</a></p>
+        ${
+          portalCode
+            ? `
+        <hr/>
+        <h3>Your Customer Dashboard</h3>
+        <p>You can view your billing and manage your subscription here:</p>
+        <p><a href="${process.env.NEXTAUTH_URL}/dashboard">${process.env.NEXTAUTH_URL}/dashboard</a></p>
+        <p><strong>Portal Code:</strong> ${portalCode}</p>
+        <p>Use your email + portal code to sign in.</p>
+        `
+            : ""
+        }
         <p>We'll be in touch soon with your site details!</p>
         <p>Best regards,<br>The Web Dev Team</p>
       `,

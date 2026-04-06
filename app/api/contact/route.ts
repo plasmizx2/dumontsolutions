@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
           <h2>Thank you for contacting us!</h2>
           <p>Hi ${name},</p>
           <p>We've received your message and will get back to you as soon as possible.</p>
-          <p>Best regards,<br>Web Dev Agency Team</p>
+          <p>Best regards,<br>DumontSolutions Team</p>
         `,
       });
     } catch (emailError) {

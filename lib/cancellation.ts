@@ -1,7 +1,5 @@
 // Utility functions for managing subscription cancellations
 
-import { Subscription } from "@prisma/client";
-
 export interface CancellationInfo {
   subscriptionId: number;
   clientName: string;

@@ -180,7 +180,7 @@ export default function EditClientPage() {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent outline-none"
             />
             <p className="text-sm text-gray-600 mt-1">
-              This is the URL of the website you're building for this client
+              This is the URL of the website you&apos;re building for this client
             </p>
           </div>
 

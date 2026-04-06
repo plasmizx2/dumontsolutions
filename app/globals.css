@@ -2,17 +2,105 @@
 @tailwind components;
 @tailwind utilities;
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
 html {
   scroll-behavior: smooth;
 }
 
 body {
-  background-color: #ffffff;
-  color: #1f2937;
+  min-height: 100vh;
+  color: #0f172a;
+  background:
+    radial-gradient(900px 600px at 20% -10%, rgba(14, 165, 233, 0.22), transparent 60%),
+    radial-gradient(900px 600px at 80% 0%, rgba(99, 102, 241, 0.18), transparent 55%),
+    radial-gradient(900px 700px at 50% 110%, rgba(16, 185, 129, 0.14), transparent 60%),
+    linear-gradient(180deg, #ffffff 0%, #f8fafc 45%, #ffffff 100%);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background: rgba(14, 165, 233, 0.25);
+}
+
+@layer components {
+  .container-page {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .glass {
+    @apply bg-white/70 backdrop-blur-xl border border-white/60 shadow-[0_10px_35px_rgba(15,23,42,0.10)];
+  }
+
+  .card {
+    @apply rounded-2xl border border-slate-200/70 bg-white/80 shadow-[0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur;
+  }
+
+  .card-hover {
+    @apply transition duration-300 hover:-translate-y-1 hover:shadow-[0_18px_55px_rgba(15,23,42,0.12)];
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 font-semibold transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white;
+  }
+
+  .btn-primary {
+    @apply btn text-white shadow-[0_10px_30px_rgba(2,132,199,0.30)];
+    background: linear-gradient(135deg, #0284c7 0%, #0ea5e9 45%, #2563eb 100%);
+  }
+  .btn-primary:hover {
+    filter: brightness(1.03);
+    transform: translateY(-1px);
+  }
+
+  .btn-secondary {
+    @apply btn border border-slate-200 bg-white/70 text-slate-900 hover:bg-white;
+  }
+
+  .link-fancy {
+    @apply underline underline-offset-4 decoration-primary-300 hover:decoration-primary-500;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .spinner {
+    animation: spin 0.9s linear infinite;
+  }
+  .animate-float {
+    animation: floaty 7s ease-in-out infinite;
+  }
+  .animate-float-slow {
+    animation: floaty 10s ease-in-out infinite;
+  }
+  .animate-shimmer {
+    animation: shimmer 1.8s ease-in-out infinite;
+  }
+}
+
+@keyframes floaty {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }

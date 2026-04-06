@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
+import { getServerSession } from "next-auth/next";
 import { authConfig } from "@/lib/auth";
 import { PrismaClient } from "@prisma/client";
 import { filterUpcomingRenewals } from "@/lib/renewals";
 
 const prisma = new PrismaClient();
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const session = await getServerSession(authConfig);
 
-    if (!session) {
+    if (!session || (session.user as any)?.role !== "admin") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -47,9 +47,7 @@ export async function GET(request: NextRequest) {
     const subscriptions = await prisma.subscription.findMany({
       where: {
         status: "active",
-        client: {
-          pricingTier: "maintenance",
-        },
+        nextBillingDate: { not: null },
       },
       include: { client: true },
     });
@@ -59,7 +57,7 @@ export async function GET(request: NextRequest) {
       clientName: renewal.clientName,
       email: renewal.email,
       nextBillingDate: renewal.nextBillingDate.toISOString(),
-      amount: 5000, // $50/month
+      amount: renewal.amountMonthly || 0,
       siteUrl: renewal.siteUrl || undefined,
     }));
 
