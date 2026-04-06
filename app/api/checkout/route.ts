@@ -51,8 +51,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Tie Checkout to a real Stripe Customer so charges show an email and receipts work.
-    // (customer_email alone can still leave some payments without a linked email in Dashboard.)
+    // Tie Checkout to a Stripe Customer and keep email in sync. Charges and receipts
+    // use the Customer's email; a stale or empty Customer causes "no email" in Dashboard.
     let stripeCustomerId = clientRecord.stripeCustomerId;
     if (!stripeCustomerId) {
       const existing = await stripe.customers.list({
@@ -68,6 +68,9 @@ export async function POST(request: NextRequest) {
         const created = await stripe.customers.create({
           email: clientEmail,
           name: clientName?.trim() || undefined,
+          ...(clientRecord.phone?.trim()
+            ? { phone: clientRecord.phone.trim() }
+            : {}),
           metadata: { clientId: String(clientId) },
         });
         stripeCustomerId = created.id;
@@ -76,6 +79,18 @@ export async function POST(request: NextRequest) {
         where: { id: clientId },
         data: { stripeCustomerId },
       });
+    }
+
+    try {
+      await stripe.customers.update(stripeCustomerId, {
+        email: clientEmail,
+        name: clientName?.trim() || undefined,
+        ...(clientRecord.phone?.trim()
+          ? { phone: clientRecord.phone.trim() }
+          : {}),
+      });
+    } catch (err) {
+      console.error("Stripe customer email sync before checkout:", err);
     }
 
     let lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
@@ -210,12 +225,20 @@ export async function POST(request: NextRequest) {
       success_url: `${baseUrl}/dashboard?checkout=success`,
       cancel_url: `${baseUrl}/pricing?canceled=true`,
       customer: stripeCustomerId,
+      // Let Checkout refresh name/address from the Customer we just updated.
+      customer_update: {
+        name: "auto",
+        address: "auto",
+      },
       client_reference_id: String(clientId),
       metadata,
       ...(discounts ? { discounts } : {}),
       payment_intent_data: {
         receipt_email: clientEmail,
-        metadata,
+        metadata: {
+          ...metadata,
+          clientEmail,
+        },
       },
     });
 
