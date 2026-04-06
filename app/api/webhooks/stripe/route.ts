@@ -288,7 +288,7 @@ export async function POST(request: NextRequest) {
             );
           } else {
             const subscriptionPrice =
-              plan === "multi_site" ? 5000 : 22500; // $50/mo (multi-site) or $225/mo (site + maintenance)
+              plan === "multi_site" ? 5000 : 6000; // $50/mo (multi-site) or $60/mo (site + maintenance)
             const priceData: any = {
               currency: "usd",
               product_data: {

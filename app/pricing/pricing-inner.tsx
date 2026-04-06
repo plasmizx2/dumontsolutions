@@ -28,7 +28,7 @@ const pricingPlans = [
     name: "Site + Maintenance",
     description: "Best for growing businesses",
     price: "$225",
-    billingPeriod: "one-time + $225/month",
+    billingPeriod: "one-time + $60/month",
     features: [
       "Everything in Basic Site",
       "Monthly maintenance",
