@@ -14,7 +14,7 @@ export default function Navigation() {
   const navLinkClass = (href: string) => {
     const active = pathname === href;
     return [
-      "relative px-3 py-2 rounded-xl transition font-semibold",
+      "relative inline-flex items-center h-10 px-3 rounded-xl transition font-semibold",
       active
         ? "text-slate-900 bg-white/70 shadow-sm ring-1 ring-slate-200"
         : "text-slate-700 hover:text-slate-900 hover:bg-white/50",
@@ -51,7 +51,7 @@ export default function Navigation() {
                 >
                   Sign up
                 </Link>
-                <Link href="/login" className="btn-primary px-4 py-2">
+                <Link href="/login" className="btn-primary h-10 px-4 py-0">
                   Sign in
                 </Link>
               </>
@@ -59,10 +59,10 @@ export default function Navigation() {
 
             {session && role === "client" && (
               <>
-                <Link href="/dashboard" className="btn-secondary px-4 py-2">
+                <Link href="/dashboard" className="btn-secondary h-10 px-4 py-0">
                   Dashboard
                 </Link>
-                <button onClick={() => signOut()} className="btn-primary px-4 py-2">
+                <button onClick={() => signOut()} className="btn-primary h-10 px-4 py-0">
                   Sign Out
                 </button>
               </>
@@ -70,10 +70,10 @@ export default function Navigation() {
 
             {session && role === "admin" && (
               <>
-                <Link href="/admin" className="btn-secondary px-4 py-2">
+                <Link href="/admin" className="btn-secondary h-10 px-4 py-0">
                   Admin Dashboard
                 </Link>
-                <button onClick={() => signOut()} className="btn-primary px-4 py-2">
+                <button onClick={() => signOut()} className="btn-primary h-10 px-4 py-0">
                   Sign Out
                 </button>
               </>
