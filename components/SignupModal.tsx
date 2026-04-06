@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import Spinner from "@/components/Spinner";
 
-type PlanId = "basic_site" | "site_maintenance" | "multi_site";
+type PlanId = "basic_site" | "site_subscription";
 
 export default function SignupModal({
   open,
@@ -18,12 +18,9 @@ export default function SignupModal({
   const { data: session, status } = useSession();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [numSites, setNumSites] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [promoCode, setPromoCode] = useState("");
-
-  const showNumSites = plan?.id === "multi_site";
 
   const title = useMemo(() => {
     if (!plan) return "Checkout";
@@ -57,9 +54,6 @@ export default function SignupModal({
         if (cancelled) return;
         if (data.name) setName(data.name);
         if (data.email) setEmail(data.email);
-        if (typeof data.numSites === "number" && data.numSites >= 1) {
-          setNumSites(data.numSites);
-        }
       } catch {
         /* ignore */
       }
@@ -91,7 +85,6 @@ export default function SignupModal({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           plan: plan.id,
-          numSites: showNumSites ? numSites : 1,
           promoCode: promoCode.trim() || undefined,
         }),
       });
@@ -188,26 +181,7 @@ export default function SignupModal({
             />
           </div>
 
-          {showNumSites && (
-            <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">
-                Number of sites
-              </label>
-              <input
-                type="number"
-                min={1}
-                max={50}
-                value={numSites}
-                onChange={(e) =>
-                  setNumSites(Math.max(1, Number(e.target.value || 1)))
-                }
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white/70 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
-              />
-              <p className="mt-2 text-sm text-slate-500">
-                You&apos;ll be charged $175 per site.
-              </p>
-            </div>
-          )}
+          {/* Number of sites section removed with simplified pricing */}
 
           {error && (
             <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl text-rose-900 text-sm">
