@@ -4,6 +4,12 @@ import { redirect } from "next/navigation";
 import { PrismaClient } from "@prisma/client";
 import { authConfig } from "@/lib/auth";
 import { syncStripeDataForClient } from "@/lib/stripe-customer-sync";
+import {
+  calculateDaysRemaining,
+  getCountdownColor,
+  getCountdownText,
+  formatBillingDate,
+} from "@/lib/renewals";
 import BillingPortalButton from "@/components/BillingPortalButton";
 import DashboardShell from "./dashboard-shell";
 
@@ -56,6 +62,35 @@ export default async function CustomerDashboardPage({
 
   const subscription = client.subscriptions[0];
 
+  const renewalShowsTimer =
+    subscription &&
+    (subscription.status === "active" ||
+      subscription.status === "trialing" ||
+      subscription.status === "past_due");
+
+  const nextRenewalDate = subscription
+    ? subscription.nextBillingDate ?? subscription.currentPeriodEnd
+    : null;
+
+  const renewalDaysRemaining =
+    renewalShowsTimer && nextRenewalDate
+      ? calculateDaysRemaining(nextRenewalDate)
+      : null;
+
+  const renewalColor =
+    renewalDaysRemaining !== null
+      ? getCountdownColor(renewalDaysRemaining)
+      : null;
+
+  const renewalColorClasses: Record<
+    "red" | "yellow" | "green",
+    string
+  > = {
+    red: "bg-red-100 text-red-900 border-red-200",
+    yellow: "bg-amber-100 text-amber-900 border-amber-200",
+    green: "bg-emerald-100 text-emerald-900 border-emerald-200",
+  };
+
   return (
     <div className="container-page py-14">
       <DashboardShell
@@ -87,31 +122,63 @@ export default async function CustomerDashboardPage({
             Subscription
           </h2>
           {subscription ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-slate-500">Status</p>
-                <p className="font-semibold text-slate-900">{subscription.status}</p>
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-slate-500">Status</p>
+                  <p className="font-semibold text-slate-900">{subscription.status}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-slate-500">Monthly amount</p>
+                  <p className="font-semibold text-slate-900">
+                    ${(subscription.amountMonthly / 100).toFixed(2)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-slate-500">Current period</p>
+                  <p className="font-semibold text-slate-900">
+                    {subscription.currentPeriodStart.toLocaleDateString()} –{" "}
+                    {subscription.currentPeriodEnd.toLocaleDateString()}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-slate-500">Next billing date</p>
+                  <p className="font-semibold text-slate-900">
+                    {(subscription.nextBillingDate ?? subscription.currentPeriodEnd).toLocaleDateString()}
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm text-slate-500">Monthly amount</p>
-                <p className="font-semibold text-slate-900">
-                  ${(subscription.amountMonthly / 100).toFixed(2)}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-slate-500">Current period</p>
-                <p className="font-semibold text-slate-900">
-                  {subscription.currentPeriodStart.toLocaleDateString()} –{" "}
-                  {subscription.currentPeriodEnd.toLocaleDateString()}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-slate-500">Next billing date</p>
-                <p className="font-semibold text-slate-900">
-                  {(subscription.nextBillingDate ?? subscription.currentPeriodEnd).toLocaleDateString()}
-                </p>
-              </div>
-            </div>
+              {renewalShowsTimer &&
+                renewalDaysRemaining !== null &&
+                renewalColor &&
+                nextRenewalDate && (
+                  <div
+                    className={`mt-6 rounded-xl border px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 ${renewalColorClasses[renewalColor]}`}
+                  >
+                    <div>
+                      <p className="text-sm font-semibold opacity-90">Renewal timer</p>
+                      <p className="text-xs opacity-80 mt-0.5">
+                        Next charge: {formatBillingDate(nextRenewalDate)} (
+                        {subscription.amountMonthly
+                          ? `$${(subscription.amountMonthly / 100).toFixed(2)}/mo`
+                          : "monthly"}
+                        )
+                      </p>
+                    </div>
+                    <span
+                      className={`inline-flex items-center justify-center rounded-full px-4 py-1.5 text-sm font-bold tracking-tight ${
+                        renewalColor === "red"
+                          ? "bg-white/80 text-red-900"
+                          : renewalColor === "yellow"
+                            ? "bg-white/80 text-amber-900"
+                            : "bg-white/80 text-emerald-900"
+                      }`}
+                    >
+                      {getCountdownText(renewalDaysRemaining)}
+                    </span>
+                  </div>
+                )}
+            </>
           ) : (
             <p className="text-slate-600">
               No active subscription found. If you think this is a mistake, contact support.
