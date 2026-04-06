@@ -202,11 +202,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid plan" }, { status: 400 });
     }
 
+    // Set success URL based on plan
+    const successUrl = plan === "site_subscription" 
+      ? `${baseUrl}/dashboard?subscription=pending`
+      : `${baseUrl}/dashboard?checkout=success`;
+
     const checkoutSession = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: lineItems,
       mode,
-      success_url: `${baseUrl}/dashboard?checkout=success`,
+      success_url: successUrl,
       cancel_url: `${baseUrl}/pricing?canceled=true`,
       customer: stripeCustomerId,
       // Let Checkout refresh name/address from the Customer we just updated.

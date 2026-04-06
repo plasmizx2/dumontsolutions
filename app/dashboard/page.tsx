@@ -18,9 +18,9 @@ const prisma = new PrismaClient();
 export default async function CustomerDashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ checkout?: string }>;
+  searchParams: Promise<{ checkout?: string; subscription?: string }>;
 }) {
-  const { checkout } = await searchParams;
+  const { checkout, subscription: subscriptionParam } = await searchParams;
   const session = await getServerSession(authConfig);
   const role = (session?.user as any)?.role as string | undefined;
   const clientId = (session?.user as any)?.clientId as number | undefined;
@@ -65,15 +65,35 @@ export default async function CustomerDashboardPage({
   // Check if user needs to buy subscription (bought site_subscription plan but no active subscription)
   const needsSubscription = client.pricingTier === 'site_subscription' && (!subscription || subscription.status !== 'active');
 
-  if (needsSubscription) {
+  // Check if user just completed the $200 payment
+  const subscriptionPending = subscriptionParam === 'pending';
+
+  if (needsSubscription || subscriptionPending) {
     return (
       <div className="min-h-screen flex flex-col justify-center py-12 sm:px-6 lg:px-8">
         <div className="sm:mx-auto sm:w-full sm:max-w-md">
           <div className="card p-8 sm:p-10 text-center">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Subscription Required</h2>
+            <div className="mb-4">
+              <div className="mx-auto w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center">
+                <svg className="w-8 h-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+              {subscriptionPending ? 'Payment Successful!' : 'Subscription Required'}
+            </h2>
             <p className="text-gray-600 mb-6">
-              You purchased the Site + Subscription plan. To continue, you need to activate your $60/month maintenance subscription.
+              {subscriptionPending 
+                ? 'Great! Your $200 payment was successful. Now you need to activate your $60/month maintenance subscription to access your dashboard.'
+                : 'You purchased the Site + Subscription plan. To continue, you need to activate your $60/month maintenance subscription.'
+              }
             </p>
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+              <p className="text-sm text-amber-800">
+                <strong>Next step:</strong> Complete your subscription to unlock full access to your dashboard and maintenance services.
+              </p>
+            </div>
             <div className="space-y-3">
               <a
                 href="/api/checkout-subscription"
