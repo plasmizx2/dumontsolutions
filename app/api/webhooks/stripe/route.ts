@@ -312,7 +312,7 @@ export async function POST(request: NextRequest) {
           if (!customerId) {
             console.error("❌ Still no customer ID after lookup, skipping subscription creation");
           } else {
-            const subscriptionPrice = 6000; // $60/mo
+            const subscriptionPrice = 5000; // $50/mo
             
             console.log(`💰 Creating subscription with price: $${subscriptionPrice/100}/mo`);
             

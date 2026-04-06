@@ -74,7 +74,7 @@ export async function POST() {
             recurring: {
               interval: "month",
             },
-            unit_amount: 6000, // $60.00
+            unit_amount: 5000, // $50.00
           },
           quantity: 1,
         },

@@ -31,7 +31,7 @@ const pricingPlans = [
     name: "Site + Subscription",
     description: "Best for growing businesses",
     price: "$200",
-    billingPeriod: "one-time + $60/month (first month free)",
+    billingPeriod: "one-time + $50/month (first month free)",
     features: [
       "Professional website design",
       "Fully responsive layout",
