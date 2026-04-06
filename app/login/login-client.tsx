@@ -16,7 +16,7 @@ export default function LoginClient() {
     setLoading(true);
     try {
       await signIn("google", {
-        callbackUrl: next || "/dashboard",
+        callbackUrl: `/post-login${next ? `?next=${encodeURIComponent(next)}` : ""}`,
       });
     } finally {
       setLoading(false);
