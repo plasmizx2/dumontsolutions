@@ -9,11 +9,16 @@ const prisma = new PrismaClient();
 
 export async function POST() {
   try {
+    console.log("🔄 Subscription checkout requested");
+    
     const session = await getServerSession(authConfig);
     const role = (session?.user as { role?: string })?.role;
     const clientId = (session?.user as { clientId?: number })?.clientId;
 
+    console.log("👤 Session info:", { session: !!session, role, clientId });
+
     if (!session || role !== "client" || !clientId) {
+      console.log("❌ Unauthorized - missing session or wrong role");
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
@@ -24,13 +29,23 @@ export async function POST() {
       where: { id: clientId },
     });
 
+    console.log("👥 Client info:", { 
+      found: !!client, 
+      email: client?.email, 
+      pricingTier: client?.pricingTier 
+    });
+
     if (!client) {
+      console.log("❌ Client not found");
       return NextResponse.json({ error: "Account not found." }, { status: 401 });
     }
 
     // Only allow subscription purchase if they bought site_subscription plan
     if (client.pricingTier !== 'site_subscription') {
-      return NextResponse.json({ error: "Subscription not available for your plan." }, { status: 400 });
+      console.log("❌ Wrong pricing tier:", client.pricingTier);
+      return NextResponse.json({ 
+        error: `Subscription not available for your plan. Current plan: ${client.pricingTier}` 
+      }, { status: 400 });
     }
 
     let stripeCustomerId = client.stripeCustomerId;
@@ -61,6 +76,8 @@ export async function POST() {
     // Create subscription checkout
     const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
 
+    console.log("💳 Creating Stripe subscription session...", { baseUrl, stripeCustomerId });
+
     const checkoutSession = await stripe.checkout.sessions.create({
       mode: "subscription",
       line_items: [
@@ -90,6 +107,8 @@ export async function POST() {
         plan: 'site_subscription'
       },
     });
+
+    console.log("✅ Stripe session created:", checkoutSession.id);
 
     return NextResponse.json({
       sessionId: checkoutSession.id,
