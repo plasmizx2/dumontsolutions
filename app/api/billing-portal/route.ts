@@ -19,21 +19,52 @@ export async function POST(request: NextRequest) {
 
     const client = await prisma.client.findUnique({
       where: { id: clientId },
-      select: { stripeCustomerId: true },
+      select: { stripeCustomerId: true, email: true, name: true },
     });
 
-    if (!client?.stripeCustomerId) {
+    if (!client?.email) {
       return NextResponse.json(
-        { error: "No Stripe customer found for this account" },
+        { error: "Account email missing; contact support." },
         { status: 400 }
       );
+    }
+
+    let customerId = client.stripeCustomerId;
+
+    // Google sign-in creates a Client before checkout; webhook may not have run yet,
+    // or the ID was never saved. Resolve Stripe customer by email or create one.
+    if (!customerId) {
+      const normalizedEmail = client.email.trim().toLowerCase();
+      const existing = await stripe.customers.list({
+        email: normalizedEmail,
+        limit: 5,
+      });
+      const match =
+        existing.data.find((c) => c.email?.toLowerCase() === normalizedEmail) ??
+        existing.data[0];
+
+      if (match) {
+        customerId = match.id;
+      } else {
+        const created = await stripe.customers.create({
+          email: normalizedEmail,
+          name: client.name?.trim() || undefined,
+          metadata: { clientId: String(clientId) },
+        });
+        customerId = created.id;
+      }
+
+      await prisma.client.update({
+        where: { id: clientId },
+        data: { stripeCustomerId: customerId },
+      });
     }
 
     const returnUrl =
       process.env.NEXTAUTH_URL?.toString() || request.nextUrl.origin;
 
     const portalSession = await stripe.billingPortal.sessions.create({
-      customer: client.stripeCustomerId,
+      customer: customerId,
       return_url: `${returnUrl}/dashboard`,
     });
 

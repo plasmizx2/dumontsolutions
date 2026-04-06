@@ -216,7 +216,12 @@ export default async function CustomerDashboardPage({
                 ) : (
                   <tr>
                     <td className="py-6 text-slate-600" colSpan={4}>
-                      No payments yet.
+                      <p>No payments recorded yet.</p>
+                      <p className="mt-2 text-sm text-slate-500">
+                        After you complete checkout, charges appear here with receipt
+                        links. Use <span className="font-medium text-slate-700">Manage Billing</span>{" "}
+                        to open Stripe for invoices and cards anytime.
+                      </p>
                     </td>
                   </tr>
                 )}
