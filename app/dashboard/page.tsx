@@ -4,10 +4,16 @@ import { redirect } from "next/navigation";
 import { PrismaClient } from "@prisma/client";
 import { authConfig } from "@/lib/auth";
 import BillingPortalButton from "@/components/BillingPortalButton";
+import DashboardShell from "./dashboard-shell";
 
 const prisma = new PrismaClient();
 
-export default async function CustomerDashboardPage() {
+export default async function CustomerDashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ checkout?: string }>;
+}) {
+  const { checkout } = await searchParams;
   const session = await getServerSession(authConfig);
   const role = (session?.user as any)?.role as string | undefined;
   const clientId = (session?.user as any)?.clientId as number | undefined;
@@ -32,6 +38,13 @@ export default async function CustomerDashboardPage() {
 
   return (
     <div className="container-page py-14">
+      <DashboardShell
+        checkoutSuccess={checkout === "success"}
+        initialCompany={client.company}
+        initialPhone={client.phone}
+        initialSiteUrl={client.siteUrl}
+      />
+
       <div className="flex items-start justify-between gap-6 flex-col sm:flex-row">
         <div>
           <h1 className="text-4xl font-black tracking-tight text-slate-900">

@@ -44,6 +44,35 @@ export async function POST(request: NextRequest) {
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
+
+        const promoMeta = session.metadata?.promoCodeId;
+        if (promoMeta && session.id) {
+          const pid = parseInt(promoMeta, 10);
+          if (!Number.isNaN(pid)) {
+            const already = await prisma.promoRedemptionLog.findUnique({
+              where: { checkoutSessionId: session.id },
+            });
+            if (!already) {
+              try {
+                await prisma.$transaction([
+                  prisma.promoRedemptionLog.create({
+                    data: {
+                      checkoutSessionId: session.id,
+                      promoCodeId: pid,
+                    },
+                  }),
+                  prisma.promoCode.update({
+                    where: { id: pid },
+                    data: { timesRedeemed: { increment: 1 } },
+                  }),
+                ]);
+              } catch (e) {
+                console.error("Promo redemption log failed:", e);
+              }
+            }
+          }
+        }
+
         const { clientName, clientEmail, plan } = session.metadata || {};
 
         if (!clientName || !clientEmail || !plan) {
@@ -60,6 +89,13 @@ export async function POST(request: NextRequest) {
         });
 
         let portalCode: string | undefined;
+        const numSitesMeta =
+          plan === "multi_site"
+            ? Math.max(
+                1,
+                Math.min(50, Number(session.metadata?.numSites || 1))
+              )
+            : undefined;
 
         if (!client) {
           portalCode = generatePortalCode();
@@ -70,17 +106,35 @@ export async function POST(request: NextRequest) {
               name: clientName,
               email: clientEmail,
               pricingTier: plan,
-              numSites: plan === "multi_site" ? 1 : 1,
+              numSites: numSitesMeta ?? 1,
               stripeCustomerId: session.customer as string,
               portalCodeHash,
             },
           });
-        } else if (!client.portalCodeHash) {
-          portalCode = generatePortalCode();
-          const portalCodeHash = await bcrypt.hash(portalCode, 10);
+        } else {
+          const updateData: {
+            stripeCustomerId?: string;
+            pricingTier: string;
+            name: string;
+            numSites?: number;
+            portalCodeHash?: string;
+          } = {
+            pricingTier: plan,
+            name: clientName,
+          };
+          if (typeof session.customer === "string" && session.customer) {
+            updateData.stripeCustomerId = session.customer;
+          }
+          if (numSitesMeta !== undefined) {
+            updateData.numSites = numSitesMeta;
+          }
+          if (!client.portalCodeHash) {
+            portalCode = generatePortalCode();
+            updateData.portalCodeHash = await bcrypt.hash(portalCode, 10);
+          }
           client = await prisma.client.update({
             where: { id: client.id },
-            data: { portalCodeHash },
+            data: updateData,
           });
         }
 

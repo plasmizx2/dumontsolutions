@@ -43,7 +43,7 @@ export default function Navigation() {
             {status !== "loading" && !session && (
               <>
                 <Link href="/login" className="btn-primary px-4 py-2">
-                  Login
+                  Sign in
                 </Link>
               </>
             )}
@@ -74,9 +74,11 @@ export default function Navigation() {
           {/* Mobile Menu Button */}
           <div className="md:hidden flex items-center gap-2">
             {status !== "loading" && !session && (
-              <Link href="/login" className="btn-primary px-3 py-2">
-                Login
-              </Link>
+              <>
+                <Link href="/login" className="btn-primary px-3 py-2">
+                  Sign in
+                </Link>
+              </>
             )}
             <button
               className="rounded-lg p-2 hover:bg-white/60 transition"
@@ -124,7 +126,7 @@ export default function Navigation() {
             {status !== "loading" && !session && (
               <>
                 <Link href="/login" className="btn-primary w-full">
-                  Login
+                  Sign in
                 </Link>
               </>
             )}

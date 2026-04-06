@@ -18,11 +18,19 @@ export default function AdminLayout({
     setMounted(true);
   }, []);
 
+  const role = (session?.user as { role?: string })?.role;
+
   useEffect(() => {
     if (mounted && status === "unauthenticated") {
-      router.push("/login?mode=admin&next=%2Fadmin");
+      router.push("/login?next=%2Fadmin");
     }
   }, [mounted, status, router]);
+
+  useEffect(() => {
+    if (mounted && status === "authenticated" && role && role !== "admin") {
+      router.push("/dashboard");
+    }
+  }, [mounted, status, role, router]);
 
   if (!mounted || status === "loading") {
     return (
@@ -35,7 +43,7 @@ export default function AdminLayout({
     );
   }
 
-  if (!session) {
+  if (!session || role !== "admin") {
     return null;
   }
 
@@ -77,6 +85,12 @@ export default function AdminLayout({
             className="block px-4 py-2 rounded hover:bg-gray-800 transition"
           >
             Cancellations
+          </Link>
+          <Link
+            href="/admin/promo-codes"
+            className="block px-4 py-2 rounded hover:bg-gray-800 transition"
+          >
+            Promo codes
           </Link>
         </nav>
 

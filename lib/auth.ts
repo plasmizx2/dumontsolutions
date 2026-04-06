@@ -1,84 +1,14 @@
 import type { NextAuthOptions } from "next-auth";
-import Credentials from "next-auth/providers/credentials";
-import bcrypt from "bcryptjs";
+import GoogleProvider from "next-auth/providers/google";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
 export const authConfig: NextAuthOptions = {
   providers: [
-    Credentials({
-      id: "admin-credentials",
-      name: "Admin Credentials",
-      credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" },
-      },
-      async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          return null;
-        }
-
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email as string },
-        });
-
-        if (!user || !user.isAdmin) {
-          return null;
-        }
-
-        const passwordMatch = await bcrypt.compare(
-          credentials.password as string,
-          user.passwordHash
-        );
-
-        if (!passwordMatch) {
-          return null;
-        }
-
-        return {
-          id: user.id.toString(),
-          email: user.email,
-          role: "admin",
-        };
-      },
-    }),
-    Credentials({
-      id: "client-credentials",
-      name: "Client Portal Code",
-      credentials: {
-        email: { label: "Email", type: "email" },
-        code: { label: "Portal Code", type: "text" },
-      },
-      async authorize(credentials) {
-        if (!credentials?.email || !credentials?.code) {
-          return null;
-        }
-
-        const client = await prisma.client.findUnique({
-          where: { email: credentials.email as string },
-        });
-
-        if (!client?.portalCodeHash) {
-          return null;
-        }
-
-        const codeMatch = await bcrypt.compare(
-          credentials.code as string,
-          client.portalCodeHash
-        );
-
-        if (!codeMatch) {
-          return null;
-        }
-
-        return {
-          id: `client:${client.id}`,
-          email: client.email,
-          role: "client",
-          clientId: client.id,
-        };
-      },
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID || "",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
     }),
   ],
   pages: {
@@ -89,10 +19,38 @@ export const authConfig: NextAuthOptions = {
   },
   callbacks: {
     async jwt({ token, user }) {
-      if (user) {
-        token.role = (user as any).role;
-        token.clientId = (user as any).clientId;
+      // On Google sign-in, NextAuth populates token.email/name.
+      const email = (token.email || (user as any)?.email || "") as string;
+      const name = (token.name || (user as any)?.name || "") as string;
+
+      const adminEmail = (process.env.ADMIN_EMAIL || "").toLowerCase();
+      if (adminEmail && email.toLowerCase() === adminEmail) {
+        token.role = "admin";
+        token.clientId = undefined;
+        return token;
       }
+
+      if (email) {
+        // Ensure there is a Client row for every signed-in customer.
+        let client = await prisma.client.findUnique({
+          where: { email: email.toLowerCase() },
+        });
+
+        if (!client) {
+          client = await prisma.client.create({
+            data: {
+              name: name || "Customer",
+              email: email.toLowerCase(),
+              pricingTier: "pending",
+              numSites: 1,
+            },
+          });
+        }
+
+        token.role = "client";
+        token.clientId = client.id;
+      }
+
       return token;
     },
     async session({ session, token }) {

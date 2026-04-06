@@ -6,8 +6,11 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  // App/runtime queries: use Supabase pooler (6543) in production if you want.
+  // Migrations always use directUrl — PgBouncer poolers often hang or fail on migrate.
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -26,7 +29,9 @@ model Client {
   company String?
   phone String?
   siteUrl String?  // https://example.com
-  pricingTier String // "basic" | "maintenance" | "multi-site"
+  /// Set at account signup; portal code remains optional backup login
+  passwordHash String?
+  pricingTier String // plan id or "pending" before first checkout
   numSites Int @default(1)
   stripeCustomerId String?
   portalCodeHash String? // hashed portal code for customer dashboard login
@@ -81,5 +86,34 @@ model ContactSubmission {
   email String
   message String
   projectType String?
+  createdAt DateTime @default(now())
+}
+
+/// Admin-created codes; backed by Stripe Coupon + Promotion Code
+model PromoCode {
+  id    Int     @id @default(autoincrement())
+  /// Uppercase normalized code customers type at checkout (e.g. LAUNCH25)
+  code String @unique
+  label String?
+  stripeCouponId String
+  stripePromotionCodeId String @unique
+  discountType String // "percent" | "amount"
+  percentOff Int?
+  amountOffCents Int?
+  maxRedemptions Int?
+  timesRedeemed Int @default(0)
+  expiresAt DateTime?
+  active Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  redemptionLogs PromoRedemptionLog[]
+}
+
+/// Prevents double-counting promo redemptions on webhook retries
+model PromoRedemptionLog {
+  checkoutSessionId String @id
+  promoCodeId Int
+  promoCode PromoCode @relation(fields: [promoCodeId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
 }

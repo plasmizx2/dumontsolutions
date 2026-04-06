@@ -1,18 +1,48 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
 import Stripe from "stripe";
+import { PrismaClient } from "@prisma/client";
+import { authConfig } from "@/lib/auth";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
+const prisma = new PrismaClient();
+
+function normalizePromoCode(raw: string) {
+  return raw.trim().toUpperCase().replace(/\s+/g, "");
+}
 
 export async function POST(request: NextRequest) {
   try {
-    const { plan, clientName, clientEmail, numSites } = await request.json();
+    const session = await getServerSession(authConfig);
+    const role = (session?.user as { role?: string })?.role;
+    const clientId = (session?.user as { clientId?: number })?.clientId;
 
-    if (!plan || !clientName || !clientEmail) {
+    if (!session || role !== "client" || !clientId) {
       return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 }
+        {
+          error:
+            "Sign up and sign in before checkout. Use the Sign up button in the navigation.",
+        },
+        { status: 401 }
       );
     }
+
+    const clientRecord = await prisma.client.findUnique({
+      where: { id: clientId },
+    });
+
+    if (!clientRecord) {
+      return NextResponse.json({ error: "Account not found." }, { status: 401 });
+    }
+
+    const { plan, numSites, promoCode: promoRaw } = await request.json();
+
+    if (!plan) {
+      return NextResponse.json({ error: "Missing plan" }, { status: 400 });
+    }
+
+    const clientName = clientRecord.name;
+    const clientEmail = clientRecord.email;
 
     let lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
     let mode: "payment" | "subscription" = "payment";
@@ -21,6 +51,71 @@ export async function POST(request: NextRequest) {
       clientEmail,
       plan,
     };
+
+    let discounts:
+      | Stripe.Checkout.SessionCreateParams.Discount[]
+      | undefined;
+
+    if (promoRaw && String(promoRaw).trim()) {
+      const normalized = normalizePromoCode(String(promoRaw));
+      const promoRow = await prisma.promoCode.findFirst({
+        where: {
+          code: normalized,
+          active: true,
+          OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+        },
+      });
+
+      if (!promoRow) {
+        return NextResponse.json(
+          { error: "Invalid or expired promo code." },
+          { status: 400 }
+        );
+      }
+
+      if (
+        promoRow.maxRedemptions != null &&
+        promoRow.timesRedeemed >= promoRow.maxRedemptions
+      ) {
+        return NextResponse.json(
+          { error: "This promo code has reached its maximum uses." },
+          { status: 400 }
+        );
+      }
+
+      try {
+        const pc = await stripe.promotionCodes.retrieve(
+          promoRow.stripePromotionCodeId
+        );
+        if (!pc.active) {
+          return NextResponse.json(
+            { error: "This promo code is no longer active." },
+            { status: 400 }
+          );
+        }
+        if (
+          pc.max_redemptions != null &&
+          pc.times_redeemed != null &&
+          pc.times_redeemed >= pc.max_redemptions
+        ) {
+          return NextResponse.json(
+            { error: "This promo code has reached its maximum uses." },
+            { status: 400 }
+          );
+        }
+      } catch {
+        return NextResponse.json(
+          { error: "Could not validate promo code with Stripe." },
+          { status: 400 }
+        );
+      }
+
+      discounts = [{ promotion_code: promoRow.stripePromotionCodeId }];
+      metadata.promoCodeId = String(promoRow.id);
+      metadata.promoCode = promoRow.code;
+    }
+
+    const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
 
     // Configure based on plan
     if (plan === "basic_site") {
@@ -39,7 +134,6 @@ export async function POST(request: NextRequest) {
       ];
       mode = "payment";
     } else if (plan === "site_maintenance") {
-      // One-time fee + recurring subscription
       lineItems = [
         {
           price_data: {
@@ -53,7 +147,7 @@ export async function POST(request: NextRequest) {
           quantity: 1,
         },
       ];
-      mode = "payment"; // First we handle the one-time payment, subscription will be created via webhook
+      mode = "payment";
     } else if (plan === "multi_site") {
       const sites = Math.max(1, Math.min(50, Number(numSites || 1)));
       metadata.numSites = String(sites);
@@ -71,19 +165,30 @@ export async function POST(request: NextRequest) {
         },
       ];
       mode = "payment";
+    } else {
+      return NextResponse.json({ error: "Invalid plan" }, { status: 400 });
     }
 
-    const session = await stripe.checkout.sessions.create({
+    const checkoutSession = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: lineItems,
-      mode: mode,
-      success_url: `${process.env.NEXTAUTH_URL}/pricing?success=true`,
-      cancel_url: `${process.env.NEXTAUTH_URL}/pricing?canceled=true`,
+      mode,
+      success_url: `${baseUrl}/dashboard?checkout=success`,
+      cancel_url: `${baseUrl}/pricing?canceled=true`,
       customer_email: clientEmail,
+      client_reference_id: String(clientId),
       metadata,
+      ...(discounts ? { discounts } : {}),
+      payment_intent_data: {
+        receipt_email: clientEmail,
+        metadata,
+      },
     });
 
-    return NextResponse.json({ sessionId: session.id, url: session.url });
+    return NextResponse.json({
+      sessionId: checkoutSession.id,
+      url: checkoutSession.url,
+    });
   } catch (error) {
     console.error("Checkout error:", error);
     return NextResponse.json(
