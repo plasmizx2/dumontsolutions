@@ -95,7 +95,14 @@ export async function POST(request: NextRequest) {
   const body = await request.text();
   const signature = request.headers.get("stripe-signature");
 
+  console.log("🔔 Webhook received:", {
+    signature: signature ? "present" : "missing",
+    bodyLength: body.length,
+    eventType: body.includes('"type":') ? JSON.parse(body).type : "unknown"
+  });
+
   if (!signature) {
+    console.error("❌ Missing Stripe signature");
     return NextResponse.json(
       { error: "Missing signature" },
       { status: 400 }
@@ -110,8 +117,9 @@ export async function POST(request: NextRequest) {
       signature,
       process.env.STRIPE_WEBHOOK_SECRET || ""
     );
+    console.log("✅ Webhook signature verified, event type:", event.type);
   } catch (err) {
-    console.error("Webhook signature verification failed:", err);
+    console.error("❌ Webhook signature verification failed:", err);
     return NextResponse.json(
       { error: "Invalid signature" },
       { status: 400 }
@@ -281,66 +289,108 @@ export async function POST(request: NextRequest) {
 
         // If site_maintenance or multi_site, create subscription
         if (plan === "site_maintenance" || plan === "multi_site") {
+          console.log(`🔄 Creating subscription for plan: ${plan}, client: ${client.id}, customerId: ${customerId}`);
+          
           if (!customerId) {
-            console.error(
-              "No Stripe customer id on checkout session; cannot create subscription",
-              session.id
-            );
+            console.error("❌ No Stripe customer id on checkout session; cannot create subscription", session.id);
+            // Try to find customer by email
+            try {
+              const customers = await stripe.customers.list({ email: clientEmail, limit: 1 });
+              if (customers.data.length > 0) {
+                customerId = customers.data[0].id;
+                console.log(`🔍 Found customer by email: ${customerId}`);
+                await prisma.client.update({
+                  where: { id: client.id },
+                  data: { stripeCustomerId: customerId }
+                });
+              }
+            } catch (findErr) {
+              console.error("❌ Failed to find customer by email:", findErr);
+            }
+          }
+          
+          if (!customerId) {
+            console.error("❌ Still no customer ID after lookup, skipping subscription creation");
           } else {
             const subscriptionPrice =
               plan === "multi_site" ? 5000 : 6000; // $50/mo (multi-site) or $60/mo (site + maintenance)
-            const priceData: any = {
-              currency: "usd",
-              product_data: {
+            
+            console.log(`💰 Creating subscription with price: $${subscriptionPrice/100}/mo`);
+            
+            try {
+              // First create a product, then price, then subscription
+              const product = await stripe.products.create({
                 name: "Monthly Maintenance",
                 description: "Site maintenance and support",
-              },
-              recurring: {
-                interval: "month",
-              },
-              unit_amount: subscriptionPrice,
-            };
-            const stripeSubscription = await stripe.subscriptions.create(
-              {
-                customer: customerId,
-                items: [
-                  {
-                    price_data: priceData,
+              });
+              
+              const price = await stripe.prices.create({
+                currency: "usd",
+                product: product.id,
+                recurring: {
+                  interval: "month",
+                },
+                unit_amount: subscriptionPrice,
+              });
+              
+              console.log(`✅ Created product: ${product.id}, price: ${price.id}`);
+              
+              const stripeSubscription = await stripe.subscriptions.create(
+                {
+                  customer: customerId,
+                  items: [
+                    {
+                      price: price.id,
+                    },
+                  ],
+                  metadata: {
+                    clientId: client.id.toString(),
+                    checkoutSessionId: session.id,
                   },
-                ],
-                metadata: {
-                  clientId: client.id.toString(),
-                  checkoutSessionId: session.id,
                 },
-              },
-              { idempotencyKey: `checkout_sub_${session.id}` }
-            );
+                { idempotencyKey: `checkout_sub_${session.id}` }
+              );
 
-            const nextBillingDate = new Date(
-              stripeSubscription.current_period_end * 1000
-            );
+              console.log(`✅ Created Stripe subscription: ${stripeSubscription.id} for client: ${client.id}`);
 
-            const existingSub = await prisma.subscription.findUnique({
-              where: { stripeSubscriptionId: stripeSubscription.id },
-            });
-            if (!existingSub) {
-              await prisma.subscription.create({
-                data: {
-                  clientId: client.id,
-                  stripeSubscriptionId: stripeSubscription.id,
-                  status: "active",
-                  currentPeriodStart: new Date(
-                    stripeSubscription.current_period_start * 1000
-                  ),
-                  currentPeriodEnd: new Date(
-                    stripeSubscription.current_period_end * 1000
-                  ),
-                  nextBillingDate: nextBillingDate,
-                  amountMonthly: subscriptionPrice,
-                },
+              const nextBillingDate = new Date(
+                stripeSubscription.current_period_end * 1000
+              );
+
+              const existingSub = await prisma.subscription.findUnique({
+                where: { stripeSubscriptionId: stripeSubscription.id },
+              });
+              if (!existingSub) {
+                const createdSub = await prisma.subscription.create({
+                  data: {
+                    clientId: client.id,
+                    stripeSubscriptionId: stripeSubscription.id,
+                    status: "active",
+                    currentPeriodStart: new Date(
+                      stripeSubscription.current_period_start * 1000
+                    ),
+                    currentPeriodEnd: new Date(
+                      stripeSubscription.current_period_end * 1000
+                    ),
+                    nextBillingDate: nextBillingDate,
+                    amountMonthly: subscriptionPrice,
+                  },
+                });
+                console.log(`✅ Created subscription in DB: ${createdSub.id} for client: ${client.id}`);
+              } else {
+                console.log(`ℹ️ Subscription already exists in DB: ${existingSub.id}`);
+              }
+            } catch (subError) {
+              console.error("❌ Failed to create subscription:", {
+                error: subError,
+                customerId,
+                plan,
+                clientId: client.id
               });
             }
           }
+        } else {
+          console.log(`ℹ️ No subscription needed for plan: ${plan}`);
         }
 
         break;

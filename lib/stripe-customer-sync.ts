@@ -15,6 +15,8 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
 export async function syncStripeDataForClient(clientId: number): Promise<void> {
   if (!process.env.STRIPE_SECRET_KEY) return;
 
+  console.log(`Syncing Stripe data for client: ${clientId}`);
+
   const client = await prisma.client.findUnique({
     where: { id: clientId },
     include: {
@@ -27,7 +29,12 @@ export async function syncStripeDataForClient(clientId: number): Promise<void> {
 
   const hasPayments = client.payments.length > 0;
   const hasSubscription = client.subscriptions.length > 0;
-  if (hasPayments && hasSubscription) return;
+  console.log(`Client ${clientId} - Has payments: ${hasPayments}, Has subscription: ${hasSubscription}`);
+  
+  if (hasPayments && hasSubscription) {
+    console.log(`Client ${clientId} already has both payments and subscription, skipping sync`);
+    return;
+  }
 
   const email = client.email.trim().toLowerCase();
 
@@ -149,6 +156,8 @@ async function syncSubscriptionFromCustomer(
   clientId: number,
   customerId: string
 ): Promise<void> {
+  console.log(`Syncing subscription from customer ${customerId} for client ${clientId}`);
+  
   const subs = await stripe.subscriptions.list({
     customer: customerId,
     status: "all",
@@ -157,18 +166,26 @@ async function syncSubscriptionFromCustomer(
   const active = subs.data.find(
     (s) => s.status === "active" || s.status === "trialing"
   );
+  
+  console.log(`Found ${subs.data.length} subscriptions, active: ${active ? active.id : 'none'}`);
+  
   if (!active) return;
 
   await upsertSubscriptionFromStripe(clientId, active);
 }
 
 async function syncSubscriptionFromSearch(clientId: number): Promise<void> {
+  console.log(`Searching subscriptions by clientId metadata for client ${clientId}`);
+  
   try {
     const searched = await stripe.subscriptions.search({
       query: `metadata['clientId']:'${clientId}' AND (status:'active' OR status:'trialing')`,
       limit: 5,
     });
     const sub = searched.data[0];
+    
+    console.log(`Search found ${searched.data.length} subscriptions, first: ${sub ? sub.id : 'none'}`);
+    
     if (!sub) return;
     await upsertSubscriptionFromStripe(clientId, sub);
   } catch (e) {
@@ -180,15 +197,20 @@ async function upsertSubscriptionFromStripe(
   clientId: number,
   active: Stripe.Subscription
 ): Promise<void> {
+  console.log(`Upserting subscription ${active.id} for client ${clientId}`);
+  
   const existing = await prisma.subscription.findUnique({
     where: { stripeSubscriptionId: active.id },
   });
-  if (existing) return;
+  if (existing) {
+    console.log(`Subscription ${active.id} already exists in DB`);
+    return;
+  }
 
   const item = active.items.data[0];
   const unitAmount = item?.price?.unit_amount ?? 0;
 
-  await prisma.subscription.create({
+  const createdSub = await prisma.subscription.create({
     data: {
       clientId,
       stripeSubscriptionId: active.id,
@@ -199,4 +221,6 @@ async function upsertSubscriptionFromStripe(
       amountMonthly: unitAmount > 0 ? unitAmount : 6000,
     },
   });
+  
+  console.log(`Created subscription in DB: ${createdSub.id} for client: ${clientId}`);
 }

@@ -113,6 +113,11 @@ export default async function CustomerDashboardPage({
             Cancel subscription
           </Link>
           <BillingPortalButton />
+          <form action="/api/client/refresh" method="POST">
+            <button type="submit" className="btn-secondary text-center">
+              Refresh data
+            </button>
+          </form>
         </div>
       </div>
 
