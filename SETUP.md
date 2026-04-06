@@ -189,9 +189,9 @@ Visit:
 ### Create Products (for Stripe dashboard)
 
 1. Go to https://dashboard.stripe.com/products
-2. Create "Basic Site" - Price: $150
-3. Create "Site Package" - Price: $150
-4. Create "Maintenance" - Price: $50/month (recurring)
+2. Create "Basic Site" - Price: $225
+3. Create "Site Package" - Price: $225
+4. Create "Maintenance" - Price: $60/month (recurring)
 
 ### Set Webhook Endpoint
 

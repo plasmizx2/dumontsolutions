@@ -13,9 +13,9 @@
 
 #### Pricing Page (`/pricing`)
 - Three pricing tiers:
-  - **Basic Site** - $150 one-time
-  - **Site + Maintenance** - $150 + $50/month
-  - **Multi-Site + Maintenance** - $150/site + $50/month
+  - **Basic Site** - $225 one-time
+  - **Site + Maintenance** - $225 + $60/month
+  - **Multi-Site + Maintenance** - $225/site + $60/month
 - Feature comparison table
 - FAQ section
 - "Get Started" buttons (ready for Stripe integration)

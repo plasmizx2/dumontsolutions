@@ -86,7 +86,7 @@ Once cron job is set up, emails send automatically:
 
 ## Example Timeline
 
-**Monday**: Customer buys Site + Maintenance for $150 + $50/month
+**Monday**: Customer buys Site + Maintenance for $225 + $60/month
 - Welcome email sent
 - Client appears in admin with 30-day countdown
 
@@ -94,10 +94,10 @@ Once cron job is set up, emails send automatically:
 - "Your renewal charges in 5 days on Monday"
 
 **Sunday (Day 29)**: Final warning email
-- "Tomorrow we'll charge your card $50"
+- "Tomorrow we'll charge your card $60"
 
 **Monday (Day 30)**: Auto-renewal happens
-- Card charged $50
+- Card charged $60
 - Confirmation email sent
 - Dashboard shows new 30-day countdown
 

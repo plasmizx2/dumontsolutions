@@ -126,15 +126,15 @@ In the Stripe Dashboard:
 
 1. **Basic Site Product**
    - Name: "Basic Site"
-   - Price: $150 (one-time)
+   - Price: $225 (one-time)
 
 2. **Site Package Product**
    - Name: "Site Package"
-   - Price: $150 (one-time)
+   - Price: $225 (one-time)
 
 3. **Maintenance Price**
    - Name: "Monthly Maintenance"
-   - Price: $50 (recurring, monthly)
+   - Price: $60 (recurring, monthly)
 
 ### 2. Set Up Webhook
 
@@ -164,19 +164,19 @@ stripe listen --forward-to localhost:3000/api/webhooks/stripe
 
 ## Pricing Plans
 
-1. **Basic Site** - $150 one-time
+1. **Basic Site** - $225 one-time
    - Professional website design
    - Fully responsive layout
    - Up to 5 pages
    - Contact form & SEO optimization
 
-2. **Site + Maintenance** - $150 one-time + $50/month
+2. **Site + Maintenance** - $225 one-time + $60/month
    - Everything in Basic Site
    - Monthly maintenance & updates
    - Security patches & backups
    - Priority support
 
-3. **Multi-Site + Maintenance** - $150/site one-time + $50/month
+3. **Multi-Site + Maintenance** - $225/site one-time + $60/month
    - Everything above
    - Manage multiple websites
    - Centralized dashboard

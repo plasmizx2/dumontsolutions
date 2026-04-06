@@ -5,8 +5,8 @@ Complete guide to the automatic renewal and email reminder system.
 ## Overview
 
 When a customer purchases a "Site + Maintenance" plan:
-1. They pay $150 one-time for the website
-2. Their credit card is charged $50/month automatically for 30 days
+1. They pay $225 one-time for the website
+2. Their credit card is charged $60/month automatically for 30 days
 3. You receive email reminders before and after charging
 4. The admin dashboard shows upcoming renewals with a countdown
 
@@ -87,7 +87,7 @@ At the top of the admin dashboard, you'll see a red "Upcoming Renewals (Next 7 D
 - **Countdown** - How many days remaining
   - 🔴 Red: 0-3 days (urgent)
   - 🟡 Yellow: 4-7 days (coming soon)
-- **Amount** - $50 per month
+- **Amount** - $60 per month
 - **Site** - Click to visit their website (if set)
 
 ### Color Coding
