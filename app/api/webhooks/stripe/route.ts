@@ -13,6 +13,15 @@ function generatePortalCode() {
   return `DS-${chunk()}${chunk()}-${chunk()}${chunk()}`;
 }
 
+function paymentIntentIdFromSession(session: Stripe.Checkout.Session): string {
+  const pi = session.payment_intent;
+  if (typeof pi === "string") return pi;
+  if (pi && typeof pi === "object" && "id" in pi) {
+    return (pi as Stripe.PaymentIntent).id;
+  }
+  return session.id;
+}
+
 export async function POST(request: NextRequest) {
   const body = await request.text();
   const signature = request.headers.get("stripe-signature");
@@ -73,14 +82,36 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        const { clientName, clientEmail, plan } = session.metadata || {};
+        const rawMeta = session.metadata || {};
+        const clientEmail = String(rawMeta.clientEmail || "")
+          .trim()
+          .toLowerCase();
+        const clientName = String(rawMeta.clientName || "").trim() || "Customer";
+        const plan = rawMeta.plan;
 
-        if (!clientName || !clientEmail || !plan) {
-          console.error("Missing metadata in checkout session");
+        if (!clientEmail || !plan) {
+          console.error("Missing metadata in checkout session", session.id);
           return NextResponse.json(
             { error: "Missing metadata" },
             { status: 400 }
           );
+        }
+
+        let customerId: string | null =
+          typeof session.customer === "string"
+            ? session.customer
+            : session.customer && typeof session.customer === "object"
+              ? (session.customer as Stripe.Customer).id
+              : null;
+
+        if (!customerId) {
+          const full = await stripe.checkout.sessions.retrieve(session.id, {
+            expand: ["customer", "payment_intent"],
+          });
+          customerId =
+            typeof full.customer === "string"
+              ? full.customer
+              : full.customer?.id ?? null;
         }
 
         // Create or update client
@@ -107,7 +138,7 @@ export async function POST(request: NextRequest) {
               email: clientEmail,
               pricingTier: plan,
               numSites: numSitesMeta ?? 1,
-              stripeCustomerId: session.customer as string,
+              stripeCustomerId: customerId ?? undefined,
               portalCodeHash,
             },
           });
@@ -122,8 +153,8 @@ export async function POST(request: NextRequest) {
             pricingTier: plan,
             name: clientName,
           };
-          if (typeof session.customer === "string" && session.customer) {
-            updateData.stripeCustomerId = session.customer;
+          if (customerId) {
+            updateData.stripeCustomerId = customerId;
           }
           if (numSitesMeta !== undefined) {
             updateData.numSites = numSitesMeta;
@@ -138,18 +169,23 @@ export async function POST(request: NextRequest) {
           });
         }
 
-        // Create payment record
-        await prisma.payment.create({
-          data: {
-            clientId: client.id,
-            stripePaymentId: session.payment_intent as string,
-            amount: session.amount_total || 0,
-            paymentType: "one_time",
-            status: "succeeded",
-            paidAt: new Date(),
-            invoiceUrl: session.url || null,
-          },
+        const stripePayId = paymentIntentIdFromSession(session);
+        const existingPay = await prisma.payment.findUnique({
+          where: { stripePaymentId: stripePayId },
         });
+        if (!existingPay) {
+          await prisma.payment.create({
+            data: {
+              clientId: client.id,
+              stripePaymentId: stripePayId,
+              amount: session.amount_total || 0,
+              paymentType: "one_time",
+              status: "succeeded",
+              paidAt: new Date(),
+              invoiceUrl: session.url || null,
+            },
+          });
+        }
 
         // Send welcome email
         try {
@@ -166,47 +202,66 @@ export async function POST(request: NextRequest) {
 
         // If site_maintenance or multi_site, create subscription
         if (plan === "site_maintenance" || plan === "multi_site") {
-          const subscriptionPrice = plan === "multi_site" ? 5000 : 6000; // $50.00/mo (multi-site) or $60.00/mo
-          const priceData: any = {
-            currency: "usd",
-            product_data: {
-              name: "Monthly Maintenance",
-              description: "Site maintenance and support",
-            },
-            recurring: {
-              interval: "month",
-            },
-            unit_amount: subscriptionPrice,
-          };
-          const stripeSubscription = await stripe.subscriptions.create({
-            customer: session.customer as string,
-            items: [
-              {
-                price_data: priceData,
+          if (!customerId) {
+            console.error(
+              "No Stripe customer id on checkout session; cannot create subscription",
+              session.id
+            );
+          } else {
+            const subscriptionPrice =
+              plan === "multi_site" ? 5000 : 6000; // $50.00/mo (multi-site) or $60.00/mo
+            const priceData: any = {
+              currency: "usd",
+              product_data: {
+                name: "Monthly Maintenance",
+                description: "Site maintenance and support",
               },
-            ],
-            metadata: { clientId: client.id.toString() },
-          });
+              recurring: {
+                interval: "month",
+              },
+              unit_amount: subscriptionPrice,
+            };
+            const stripeSubscription = await stripe.subscriptions.create(
+              {
+                customer: customerId,
+                items: [
+                  {
+                    price_data: priceData,
+                  },
+                ],
+                metadata: {
+                  clientId: client.id.toString(),
+                  checkoutSessionId: session.id,
+                },
+              },
+              { idempotencyKey: `checkout_sub_${session.id}` }
+            );
 
-          const nextBillingDate = new Date(
-            stripeSubscription.current_period_end * 1000
-          );
+            const nextBillingDate = new Date(
+              stripeSubscription.current_period_end * 1000
+            );
 
-          await prisma.subscription.create({
-            data: {
-              clientId: client.id,
-              stripeSubscriptionId: stripeSubscription.id,
-              status: "active",
-              currentPeriodStart: new Date(
-                stripeSubscription.current_period_start * 1000
-              ),
-              currentPeriodEnd: new Date(
-                stripeSubscription.current_period_end * 1000
-              ),
-              nextBillingDate: nextBillingDate,
-              amountMonthly: subscriptionPrice,
-            },
-          });
+            const existingSub = await prisma.subscription.findUnique({
+              where: { stripeSubscriptionId: stripeSubscription.id },
+            });
+            if (!existingSub) {
+              await prisma.subscription.create({
+                data: {
+                  clientId: client.id,
+                  stripeSubscriptionId: stripeSubscription.id,
+                  status: "active",
+                  currentPeriodStart: new Date(
+                    stripeSubscription.current_period_start * 1000
+                  ),
+                  currentPeriodEnd: new Date(
+                    stripeSubscription.current_period_end * 1000
+                  ),
+                  nextBillingDate: nextBillingDate,
+                  amountMonthly: subscriptionPrice,
+                },
+              });
+            }
+          }
         }
 
         break;

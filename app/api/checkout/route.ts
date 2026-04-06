@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     }
 
     const clientName = clientRecord.name;
-    const clientEmail = clientRecord.email;
+    const clientEmail = clientRecord.email.trim().toLowerCase();
 
     let lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
     let mode: "payment" | "subscription" = "payment";
