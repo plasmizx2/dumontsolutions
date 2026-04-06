@@ -226,7 +226,7 @@ export async function POST(request: NextRequest) {
         receipt_email: clientEmail,
         // Required so the card used at checkout is saved on the Customer for the
         // recurring subscription the webhook creates (Site + Maintenance / Multi-Site).
-        ...(plan === "site_maintenance" || plan === "multi_site"
+        ...(plan === "site_subscription"
           ? { setup_future_usage: "off_session" as const }
           : {}),
         metadata: {
