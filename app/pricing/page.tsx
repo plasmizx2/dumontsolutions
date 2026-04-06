@@ -3,6 +3,8 @@
 import { useState } from "react";
 import SignupModal from "@/components/SignupModal";
 
+type PlanId = "basic_site" | "site_maintenance" | "multi_site";
+
 const pricingPlans = [
   {
     name: "Basic Site",
@@ -17,7 +19,7 @@ const pricingPlans = [
       "SEO optimization",
       "SSL certificate",
     ],
-    stripeProductId: "basic_site",
+    stripeProductId: "basic_site" as PlanId,
     highlighted: false,
   },
   {
@@ -34,7 +36,7 @@ const pricingPlans = [
       "Priority support",
       "Unlimited revisions for 30 days",
     ],
-    stripeProductId: "site_maintenance",
+    stripeProductId: "site_maintenance" as PlanId,
     highlighted: true,
   },
   {
@@ -51,7 +53,7 @@ const pricingPlans = [
       "Custom integrations",
       "Dedicated account manager",
     ],
-    stripeProductId: "multi_site",
+    stripeProductId: "multi_site" as PlanId,
     highlighted: false,
   },
 ];
@@ -59,7 +61,7 @@ const pricingPlans = [
 export default function PricingPage() {
   const [signupOpen, setSignupOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<{
-    id: "basic_site" | "site_maintenance" | "multi_site";
+    id: PlanId;
     name: string;
   } | null>(null);
 
