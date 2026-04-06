@@ -62,6 +62,38 @@ export default async function CustomerDashboardPage({
 
   const subscription = client.subscriptions[0];
 
+  // Check if user needs to buy subscription (bought site_subscription plan but no active subscription)
+  const needsSubscription = client.pricingTier === 'site_subscription' && (!subscription || subscription.status !== 'active');
+
+  if (needsSubscription) {
+    return (
+      <div className="min-h-screen flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+        <div className="sm:mx-auto sm:w-full sm:max-w-md">
+          <div className="card p-8 sm:p-10 text-center">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Subscription Required</h2>
+            <p className="text-gray-600 mb-6">
+              You purchased the Site + Subscription plan. To continue, you need to activate your $60/month maintenance subscription.
+            </p>
+            <div className="space-y-3">
+              <a
+                href="/api/checkout-subscription"
+                className="btn-primary w-full block text-center"
+              >
+                Activate Subscription - $60/month
+              </a>
+              <a 
+                href="/dashboard"
+                className="btn-secondary w-full block text-center"
+              >
+                Return to Dashboard
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const renewalShowsTimer =
     subscription &&
     (subscription.status === "active" ||

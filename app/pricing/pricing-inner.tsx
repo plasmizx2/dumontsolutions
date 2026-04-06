@@ -5,13 +5,13 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import SignupModal from "@/components/SignupModal";
 
-type PlanId = "basic_site" | "site_maintenance" | "multi_site";
+type PlanId = "basic_site" | "site_subscription";
 
 const pricingPlans = [
   {
     name: "Basic Site",
     description: "Perfect for getting started",
-    price: "$225",
+    price: "$300",
     billingPeriod: "one-time",
     features: [
       "Professional website design",
@@ -20,43 +20,31 @@ const pricingPlans = [
       "Contact form",
       "SEO optimization",
       "SSL certificate",
+      "Full dashboard access",
+      "No ongoing fees",
     ],
     stripeProductId: "basic_site" as PlanId,
     highlighted: false,
   },
   {
-    name: "Site + Maintenance",
+    name: "Site + Subscription",
     description: "Best for growing businesses",
-    price: "$225",
-    billingPeriod: "one-time + $60/month",
+    price: "$200",
+    billingPeriod: "one-time + $60/month subscription",
     features: [
-      "Everything in Basic Site",
-      "Monthly maintenance",
-      "Security updates",
-      "Performance optimization",
-      "Monthly backups",
+      "Professional website design",
+      "Fully responsive layout",
+      "Up to 5 pages",
+      "Contact form",
+      "SEO optimization",
+      "SSL certificate",
+      "Monthly maintenance & updates",
+      "Security patches",
       "Priority support",
-      "Unlimited revisions for 30 days",
+      "Monthly backups",
     ],
-    stripeProductId: "site_maintenance" as PlanId,
+    stripeProductId: "site_subscription" as PlanId,
     highlighted: true,
-  },
-  {
-    name: "Multi-Site + Maintenance",
-    description: "For expanding operations",
-    price: "$175",
-    billingPeriod: "per site + $50/month",
-    features: [
-      "Everything in Site + Maintenance",
-      "Manage multiple websites",
-      "Centralized dashboard",
-      "Bulk updates",
-      "Advanced analytics",
-      "Custom integrations",
-      "Dedicated account manager",
-    ],
-    stripeProductId: "multi_site" as PlanId,
-    highlighted: false,
   },
 ];
 
@@ -201,23 +189,18 @@ export default function PricingInner() {
                     Basic Site
                   </th>
                   <th className="px-6 py-4 text-center font-semibold">
-                    Site + Maintenance
-                  </th>
-                  <th className="px-6 py-4 text-center font-semibold">
-                    Multi-Site
+                    Site + Subscription
                   </th>
                 </tr>
               </thead>
               <tbody>
                 {[
-                  ["Professional Design", true, true, true],
-                  ["Responsive Layout", true, true, true],
-                  ["Monthly Maintenance", false, true, true],
-                  ["Security Updates", false, true, true],
-                  ["Priority Support", false, true, true],
-                  ["Multiple Websites", false, false, true],
-                  ["Advanced Analytics", false, false, true],
-                  ["Dedicated Manager", false, false, true],
+                  ["Professional Design", true, true],
+                  ["Responsive Layout", true, true],
+                  ["Monthly Maintenance", false, true],
+                  ["Security Updates", false, true],
+                  ["Priority Support", false, true],
+                  ["No Ongoing Fees", true, false],
                 ].map((row, idx) => (
                   <tr
                     key={idx}
@@ -229,9 +212,6 @@ export default function PricingInner() {
                     </td>
                     <td className="px-6 py-4 text-center">
                       {row[2] ? "✓" : "-"}
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      {row[3] ? "✓" : "-"}
                     </td>
                   </tr>
                 ))}

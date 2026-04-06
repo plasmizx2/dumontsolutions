@@ -177,13 +177,13 @@ export async function POST(request: NextRequest) {
               name: "Basic Site",
               description: "Professional website design and development",
             },
-            unit_amount: 22500, // $225.00
+            unit_amount: 30000, // $300.00
           },
           quantity: 1,
         },
       ];
       mode = "payment";
-    } else if (plan === "site_maintenance") {
+    } else if (plan === "site_subscription") {
       lineItems = [
         {
           price_data: {
@@ -192,26 +192,9 @@ export async function POST(request: NextRequest) {
               name: "Site Package",
               description: "Initial website setup",
             },
-            unit_amount: 22500, // $225.00
+            unit_amount: 20000, // $200.00
           },
           quantity: 1,
-        },
-      ];
-      mode = "payment";
-    } else if (plan === "multi_site") {
-      const sites = Math.max(1, Math.min(50, Number(numSites || 1)));
-      metadata.numSites = String(sites);
-      lineItems = [
-        {
-          price_data: {
-            currency: "usd",
-            product_data: {
-              name: "Multi-Site Package",
-              description: "Website setup for multiple sites",
-            },
-            unit_amount: 17500, // $175 per site
-          },
-          quantity: sites,
         },
       ];
       mode = "payment";

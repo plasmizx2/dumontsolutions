@@ -287,8 +287,8 @@ export async function POST(request: NextRequest) {
           console.error("Failed to send welcome email:", emailError);
         }
 
-        // If site_maintenance or multi_site, create subscription
-        if (plan === "site_maintenance" || plan === "multi_site") {
+        // If site_subscription, create subscription
+        if (plan === "site_subscription") {
           console.log(`🔄 Creating subscription for plan: ${plan}, client: ${client.id}, customerId: ${customerId}`);
           
           if (!customerId) {
@@ -312,8 +312,7 @@ export async function POST(request: NextRequest) {
           if (!customerId) {
             console.error("❌ Still no customer ID after lookup, skipping subscription creation");
           } else {
-            const subscriptionPrice =
-              plan === "multi_site" ? 5000 : 6000; // $50/mo (multi-site) or $60/mo (site + maintenance)
+            const subscriptionPrice = 6000; // $60/mo
             
             console.log(`💰 Creating subscription with price: $${subscriptionPrice/100}/mo`);
             
