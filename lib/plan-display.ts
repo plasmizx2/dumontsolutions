@@ -3,6 +3,7 @@
 export function formatPlanLabel(tier: string): string {
   const t = (tier || "").toLowerCase();
   if (t === "basic_site") return "Basic Site";
+  if (t === "site_subscription") return "Site + Subscription";
   if (t === "site_maintenance") return "Site + Maintenance";
   if (t === "multi_site") return "Multi-Site + Maintenance";
   if (t === "pending") return "Pending checkout";
@@ -12,7 +13,8 @@ export function formatPlanLabel(tier: string): string {
 export function formatCatalogPricing(tier: string, numSites: number = 1): string {
   const n = Math.max(1, Math.min(50, numSites || 1));
   const t = (tier || "").toLowerCase();
-  if (t === "basic_site") return "$225 one-time";
+  if (t === "basic_site") return "$300 one-time";
+  if (t === "site_subscription") return "$200 one-time + $50/mo";
   if (t === "site_maintenance") return "$225 one-time + $60/mo";
   if (t === "multi_site") return `$${175 * n} one-time ($175 × ${n}) + $50/mo`;
   if (t === "pending") return "—";
