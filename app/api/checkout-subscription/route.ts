@@ -62,7 +62,6 @@ export async function POST() {
     const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
 
     const checkoutSession = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
       mode: "subscription",
       line_items: [
         {
@@ -80,6 +79,9 @@ export async function POST() {
           quantity: 1,
         },
       ],
+      subscription_data: {
+        trial_period_days: 30, // Free for first month
+      },
       success_url: `${baseUrl}/dashboard?subscription=success`,
       cancel_url: `${baseUrl}/dashboard`,
       customer: stripeCustomerId,
