@@ -37,7 +37,7 @@ export default async function CancelSubscriptionPage() {
           <div className="card p-8 sm:p-10 text-center">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">No Active Subscription</h2>
             <p className="text-gray-600 mb-6">
-              You don't have an active subscription to cancel. If you think this is a mistake, please contact support.
+              You don&apos;t have an active subscription to cancel. If you think this is a mistake, please contact support.
             </p>
             <a 
               href="/dashboard"
