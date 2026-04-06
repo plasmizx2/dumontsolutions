@@ -109,9 +109,11 @@ export default async function CustomerDashboardPage({
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-          <Link href="/cancel" className="btn-secondary text-center">
-            Cancel subscription
-          </Link>
+          {subscription && subscription.status === 'active' && (
+            <Link href="/cancel" className="btn-secondary text-center">
+              Cancel subscription
+            </Link>
+          )}
           <BillingPortalButton />
           <form action="/api/client/refresh" method="POST">
             <button type="submit" className="btn-secondary text-center">
