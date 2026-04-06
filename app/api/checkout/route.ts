@@ -44,6 +44,40 @@ export async function POST(request: NextRequest) {
     const clientName = clientRecord.name;
     const clientEmail = clientRecord.email.trim().toLowerCase();
 
+    if (!clientEmail) {
+      return NextResponse.json(
+        { error: "Your account needs an email before checkout." },
+        { status: 400 }
+      );
+    }
+
+    // Tie Checkout to a real Stripe Customer so charges show an email and receipts work.
+    // (customer_email alone can still leave some payments without a linked email in Dashboard.)
+    let stripeCustomerId = clientRecord.stripeCustomerId;
+    if (!stripeCustomerId) {
+      const existing = await stripe.customers.list({
+        email: clientEmail,
+        limit: 5,
+      });
+      const match =
+        existing.data.find((c) => c.email?.toLowerCase() === clientEmail) ??
+        existing.data[0];
+      if (match) {
+        stripeCustomerId = match.id;
+      } else {
+        const created = await stripe.customers.create({
+          email: clientEmail,
+          name: clientName?.trim() || undefined,
+          metadata: { clientId: String(clientId) },
+        });
+        stripeCustomerId = created.id;
+      }
+      await prisma.client.update({
+        where: { id: clientId },
+        data: { stripeCustomerId },
+      });
+    }
+
     let lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
     let mode: "payment" | "subscription" = "payment";
     const metadata: Record<string, string> = {
@@ -175,7 +209,7 @@ export async function POST(request: NextRequest) {
       mode,
       success_url: `${baseUrl}/dashboard?checkout=success`,
       cancel_url: `${baseUrl}/pricing?canceled=true`,
-      customer_email: clientEmail,
+      customer: stripeCustomerId,
       client_reference_id: String(clientId),
       metadata,
       ...(discounts ? { discounts } : {}),
