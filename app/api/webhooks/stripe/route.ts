@@ -289,110 +289,111 @@ export async function POST(request: NextRequest) {
 
         // Create subscription for any payment that needs one
         // If payment amount is $200, assume they want subscription
-        if (session.amount_total === 20000) {
-          console.log(`🔄 Creating subscription for $200 payment, client: ${client.id}, customerId: ${customerId}`);
-          
-          if (!customerId) {
-            console.error("❌ No Stripe customer id on checkout session; cannot create subscription", session.id);
-            // Try to find customer by email
-            try {
-              const customers = await stripe.customers.list({ email: clientEmail, limit: 1 });
-              if (customers.data.length > 0) {
-                customerId = customers.data[0].id;
-                console.log(`🔍 Found customer by email: ${customerId}`);
-                await prisma.client.update({
-                  where: { id: client.id },
-                  data: { stripeCustomerId: customerId }
-                });
-              }
-            } catch (findErr) {
-              console.error("❌ Failed to find customer by email:", findErr);
-            }
-          }
-          
-          if (!customerId) {
-            console.error("❌ Still no customer ID after lookup, skipping subscription creation");
-          } else {
-            const subscriptionPrice = 5000; // $50/mo
-            
-            console.log(`💰 Creating subscription with price: $${subscriptionPrice/100}/mo`);
-            
-            try {
-              // First create a product, then price, then subscription
-              const product = await stripe.products.create({
-                name: "Monthly Maintenance",
-                description: "Site maintenance and support",
-              });
-              
-              const price = await stripe.prices.create({
-                currency: "usd",
-                product: product.id,
-                recurring: {
-                  interval: "month",
-                },
-                unit_amount: subscriptionPrice,
-              });
-              
-              console.log(`✅ Created product: ${product.id}, price: ${price.id}`);
-              
-              const stripeSubscription = await stripe.subscriptions.create(
-                {
-                  customer: customerId,
-                  items: [
-                    {
-                      price: price.id,
-                    },
-                  ],
-                  metadata: {
-                    clientId: client.id.toString(),
-                    checkoutSessionId: session.id,
-                  },
-                },
-                { idempotencyKey: `checkout_sub_${session.id}` }
-              );
+        // DISABLED: Let users buy subscription manually instead
+        // if (session.amount_total === 20000) {
+        //   console.log(`🔄 Creating subscription for $200 payment, client: ${client.id}, customerId: ${customerId}`);
+        //   
+        //   if (!customerId) {
+        //     console.error("❌ No Stripe customer id on checkout session; cannot create subscription", session.id);
+        //     // Try to find customer by email
+        //     try {
+        //       const customers = await stripe.customers.list({ email: clientEmail, limit: 1 });
+        //       if (customers.data.length > 0) {
+        //         customerId = customers.data[0].id;
+        //         console.log(`🔍 Found customer by email: ${customerId}`);
+        //         await prisma.client.update({
+        //           where: { id: client.id },
+        //           data: { stripeCustomerId: customerId }
+        //         });
+        //       }
+        //     } catch (findErr) {
+        //       console.error("❌ Failed to find customer by email:", findErr);
+        //     }
+        //   }
+        //   
+        //   if (!customerId) {
+        //     console.error("❌ Still no customer ID after lookup, skipping subscription creation");
+        //   } else {
+        //     const subscriptionPrice = 5000; // $50/mo
+        //     
+        //     console.log(`💰 Creating subscription with price: $${subscriptionPrice/100}/mo`);
+        //     
+        //     try {
+        //       // First create a product, then price, then subscription
+        //       const product = await stripe.products.create({
+        //         name: "Monthly Maintenance",
+        //         description: "Site maintenance and support",
+        //       });
+        //       
+        //       const price = await stripe.prices.create({
+        //         currency: "usd",
+        //         product: product.id,
+        //         recurring: {
+        //           interval: "month",
+        //         },
+        //         unit_amount: subscriptionPrice,
+        //       });
+        //       
+        //       console.log(`✅ Created product: ${product.id}, price: ${price.id}`);
+        //       
+        //       const stripeSubscription = await stripe.subscriptions.create(
+        //         {
+        //           customer: customerId,
+        //           items: [
+        //             {
+        //               price: price.id,
+        //             },
+        //           ],
+        //           metadata: {
+        //             clientId: client.id.toString(),
+        //             checkoutSessionId: session.id,
+        //           },
+        //         },
+        //         { idempotencyKey: `checkout_sub_${session.id}` }
+        //       );
 
-              console.log(`✅ Created Stripe subscription: ${stripeSubscription.id} for client: ${client.id}`);
+        //       console.log(`✅ Created Stripe subscription: ${stripeSubscription.id} for client: ${client.id}`);
 
-              const nextBillingDate = new Date(
-                stripeSubscription.current_period_end * 1000
-              );
+        //       const nextBillingDate = new Date(
+        //         stripeSubscription.current_period_end * 1000
+        //       );
 
-              const existingSub = await prisma.subscription.findUnique({
-                where: { stripeSubscriptionId: stripeSubscription.id },
-              });
-              if (!existingSub) {
-                const createdSub = await prisma.subscription.create({
-                  data: {
-                    clientId: client.id,
-                    stripeSubscriptionId: stripeSubscription.id,
-                    status: "active",
-                    currentPeriodStart: new Date(
-                      stripeSubscription.current_period_start * 1000
-                    ),
-                    currentPeriodEnd: new Date(
-                      stripeSubscription.current_period_end * 1000
-                    ),
-                    nextBillingDate: nextBillingDate,
-                    amountMonthly: subscriptionPrice,
-                  },
-                });
-                console.log(`✅ Created subscription in DB: ${createdSub.id} for client: ${client.id}`);
-              } else {
-                console.log(`ℹ️ Subscription already exists in DB: ${existingSub.id}`);
-              }
-            } catch (subError) {
-              console.error("❌ Failed to create subscription:", {
-                error: (subError as Error).message,
-                stack: (subError as Error).stack,
-                customerId,
-                clientEmail,
-                plan
-              });
-            }
-          }
-        } else {
-          console.log(`ℹ️ No subscription needed for $${(session.amount_total || 0) / 100} payment`);
-        }
+        //       const existingSub = await prisma.subscription.findUnique({
+        //         where: { stripeSubscriptionId: stripeSubscription.id },
+        //       });
+        //       if (!existingSub) {
+        //         const createdSub = await prisma.subscription.create({
+        //           data: {
+        //             clientId: client.id,
+        //             stripeSubscriptionId: stripeSubscription.id,
+        //             status: "active",
+        //             currentPeriodStart: new Date(
+        //               stripeSubscription.current_period_start * 1000
+        //             ),
+        //             currentPeriodEnd: new Date(
+        //               stripeSubscription.current_period_end * 1000
+        //             ),
+        //             nextBillingDate: nextBillingDate,
+        //             amountMonthly: subscriptionPrice,
+        //           },
+        //         });
+        //         console.log(`✅ Created subscription in DB: ${createdSub.id} for client: ${client.id}`);
+        //       } else {
+        //         console.log(`ℹ️ Subscription already exists in DB: ${existingSub.id}`);
+        //       }
+        //     } catch (subError) {
+        //       console.error("❌ Failed to create subscription:", {
+        //         error: (subError as Error).message,
+        //         stack: (subError as Error).stack,
+        //         customerId,
+        //         clientEmail,
+        //         plan
+        //       });
+        //     }
+        //   }
+        // } else {
+        //   console.log(`ℹ️ No subscription needed for $${(session.amount_total || 0) / 100} payment`);
+        // }
 
         break;
       }
