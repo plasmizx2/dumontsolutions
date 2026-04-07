@@ -106,7 +106,15 @@ export async function POST() {
     console.log("✅ Stripe session created:", checkoutSession.id);
     console.log("🔗 Session URL:", checkoutSession.url);
 
-    return NextResponse.json({ url: checkoutSession.url });
+    // Redirect to Stripe checkout instead of returning JSON
+    if (checkoutSession.url) {
+      return NextResponse.redirect(checkoutSession.url, 303);
+    } else {
+      return NextResponse.json(
+        { error: "No checkout URL created" },
+        { status: 500 }
+      );
+    }
   } catch (error) {
     console.error("Subscription checkout error:", error);
     return NextResponse.json(
