@@ -41,10 +41,8 @@ export default async function CustomerDashboardPage({
     redirect("/dashboard/login");
   }
 
-  if (
-    process.env.STRIPE_SECRET_KEY &&
-    (client.payments.length === 0 || client.subscriptions.length === 0)
-  ) {
+  // Auto-sync data every time dashboard loads
+  if (process.env.STRIPE_SECRET_KEY) {
     try {
       await syncStripeDataForClient(clientId);
       const refreshed = await prisma.client.findUnique({
@@ -167,11 +165,6 @@ export default async function CustomerDashboardPage({
             </Link>
           )}
           <BillingPortalButton />
-          <form action="/api/client/refresh" method="POST">
-            <button type="submit" className="btn-secondary text-center">
-              Refresh data
-            </button>
-          </form>
         </div>
       </div>
 
