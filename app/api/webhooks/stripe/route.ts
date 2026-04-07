@@ -287,9 +287,10 @@ export async function POST(request: NextRequest) {
           console.error("Failed to send welcome email:", emailError);
         }
 
-        // If site_subscription, create subscription
-        if (plan === "site_subscription") {
-          console.log(`🔄 Creating subscription for plan: ${plan}, client: ${client.id}, customerId: ${customerId}`);
+        // Create subscription for any payment that needs one
+        // If payment amount is $200, assume they want subscription
+        if (session.amount_total === 20000) {
+          console.log(`🔄 Creating subscription for $200 payment, client: ${client.id}, customerId: ${customerId}`);
           
           if (!customerId) {
             console.error("❌ No Stripe customer id on checkout session; cannot create subscription", session.id);
@@ -390,7 +391,7 @@ export async function POST(request: NextRequest) {
             }
           }
         } else {
-          console.log(`ℹ️ No subscription needed for plan: ${plan}`);
+          console.log(`ℹ️ No subscription needed for $${(session.amount_total || 0) / 100} payment`);
         }
 
         break;
