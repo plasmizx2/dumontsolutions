@@ -40,13 +40,8 @@ export async function POST() {
       return NextResponse.json({ error: "Account not found." }, { status: 401 });
     }
 
-    // Only allow subscription purchase if they bought site_subscription plan
-    if (client.pricingTier !== 'site_subscription') {
-      console.log("❌ Wrong pricing tier:", client.pricingTier);
-      return NextResponse.json({ 
-        error: `Subscription not available for your plan. Current plan: ${client.pricingTier}` 
-      }, { status: 400 });
-    }
+    // Allow any client to buy subscription
+    // Removed restriction - anyone can subscribe if they want maintenance
 
     let stripeCustomerId = client.stripeCustomerId;
     if (!stripeCustomerId) {

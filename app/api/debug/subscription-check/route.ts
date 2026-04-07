@@ -45,7 +45,8 @@ export async function GET() {
     return NextResponse.json({
       ...result,
       client,
-      canBuySubscription: client?.pricingTier === 'site_subscription'
+      canBuySubscription: true, // Anyone can buy subscription now
+      subscriptionAvailable: true
     });
   } catch (error) {
     return NextResponse.json(

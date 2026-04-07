@@ -243,24 +243,17 @@ export default async function CustomerDashboardPage({
               <p className="text-slate-600">
                 No active subscription found.
               </p>
-              {client.pricingTier === 'site_subscription' && (
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                  <p className="text-sm text-amber-800 mb-3">
-                    <strong>Subscription Required:</strong> You purchased the Site + Subscription plan and need to activate your monthly maintenance subscription.
-                  </p>
-                  <a
-                    href="/api/checkout-subscription"
-                    className="btn-primary w-full text-center block"
-                  >
-                    Activate Subscription - $50/month (First Month Free)
-                  </a>
-                </div>
-              )}
-              {client.pricingTier !== 'site_subscription' && (
-                <p className="text-slate-500 text-sm">
-                  If you think this is a mistake, contact support.
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-sm text-blue-800 mb-3">
+                  <strong>Add Maintenance Subscription:</strong> Get ongoing support, updates, and security patches for your site.
                 </p>
-              )}
+                <a
+                  href="/api/checkout-subscription"
+                  className="btn-primary w-full text-center block"
+                >
+                  Add Subscription - $50/month (First Month Free)
+                </a>
+              </div>
             </div>
           )}
         </div>
