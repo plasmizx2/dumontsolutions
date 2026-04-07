@@ -179,7 +179,7 @@ async function syncSubscriptionFromSearch(clientId: number): Promise<void> {
   
   try {
     const searched = await stripe.subscriptions.search({
-      query: `metadata['clientId']:'${clientId}' AND (status:'active' OR status:'trialing')`,
+      query: `metadata['clientId']:'${clientId}' AND status:'active'`,
       limit: 5,
     });
     const sub = searched.data[0];
