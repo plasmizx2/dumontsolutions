@@ -381,10 +381,11 @@ export async function POST(request: NextRequest) {
               }
             } catch (subError) {
               console.error("❌ Failed to create subscription:", {
-                error: subError,
+                error: (subError as Error).message,
+                stack: (subError as Error).stack,
                 customerId,
-                plan,
-                clientId: client.id
+                clientEmail,
+                plan
               });
             }
           }
